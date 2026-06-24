@@ -1,16 +1,13 @@
 import { notFound, redirect } from "next/navigation";
 import { getDealerId } from "@/lib/session";
-import { serverClient } from "@/lib/supabase/server";
 import { formatNZD } from "@/lib/money";
-import { Auction, Vehicle, Dealer, Bid } from "@/types/db";
+import { Bid, Dealer } from "@/types/db";
 import { BidPanel } from "@/components/BidPanel";
+import { PublishPanel } from "@/components/PublishPanel";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { DealerBadge } from "@/components/DealerBadge";
-
-type AuctionRow = Auction & {
-  vehicle: Vehicle;
-  seller: Dealer;
-};
+import { getAuctionById } from "@/lib/auctions";
+import { serverClient } from "@/lib/supabase/server";
 
 type BidRow = Bid & { dealer: Pick<Dealer, "business_name"> | null };
 
@@ -25,30 +22,39 @@ export default async function AuctionDetailPage({
   const currentDealerId = await getDealerId();
   if (!currentDealerId) redirect("/login");
 
-  const sb = await serverClient();
-
-  // Fetch the auction with vehicle + seller (using FK-disambiguated join)
-  const { data: auction } = await sb
-    .from("auctions")
-    .select("*, vehicle:vehicles(*), seller:dealers!auctions_seller_dealer_id_fkey(*)")
-    .eq("id", id)
-    .single();
-
+  const auction = await getAuctionById(id);
   if (!auction) notFound();
 
-  const typed = auction as AuctionRow;
+  const isDraft = auction.status === "draft";
 
-  // Fetch bids newest first, with the bidder's dealer record
-  const { data: bidsRaw } = await sb
-    .from("bids")
-    .select("*, dealer:dealers!bids_bidder_dealer_id_fkey(business_name)")
-    .eq("auction_id", id)
-    .order("created_at", { ascending: false });
+  // Drafts are private: only the owner may view them
+  if (isDraft && auction.seller_dealer_id !== currentDealerId) notFound();
 
-  const bids: BidRow[] = (bidsRaw ?? []) as BidRow[];
+  // For live auctions, fetch bids; skip entirely for drafts
+  let bids: BidRow[] = [];
+  if (!isDraft) {
+    const sb = await serverClient();
+    const { data: bidsRaw } = await sb
+      .from("bids")
+      .select("*, dealer:dealers!bids_bidder_dealer_id_fkey(business_name)")
+      .eq("auction_id", id)
+      .order("created_at", { ascending: false });
+    bids = (bidsRaw ?? []) as BidRow[];
+  }
 
-  const { vehicle, seller } = typed;
-  const displayPrice = typed.current_bid ?? typed.starting_price;
+  const { vehicle, seller } = auction;
+  const displayPrice = auction.current_bid ?? auction.starting_price;
+
+  // Right-hand panel: PublishPanel for owner's draft, BidPanel otherwise
+  const rightPanel = isDraft ? (
+    <PublishPanel auctionId={auction.id} />
+  ) : (
+    <BidPanel
+      auction={auction}
+      currentDealerId={currentDealerId}
+      initialBids={bids}
+    />
+  );
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
@@ -59,6 +65,12 @@ export default async function AuctionDetailPage({
       >
         ← Back to auctions
       </a>
+
+      {isDraft && (
+        <div className="mb-4 rounded-lg bg-amber-950/40 border border-amber-700 px-4 py-2 text-sm text-amber-300 font-medium">
+          Draft — not yet live
+        </div>
+      )}
 
       <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left column: vehicle details */}
@@ -97,19 +109,21 @@ export default async function AuctionDetailPage({
 
           {/* Stats grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <Stat label="Starting price" value={formatNZD(typed.starting_price)} />
+            <Stat label="Starting price" value={formatNZD(auction.starting_price)} />
             <Stat label="Current bid" value={formatNZD(displayPrice)} highlight />
-            <Stat label="Bid increment" value={formatNZD(typed.bid_increment)} />
-            {typed.buy_now_price ? (
-              <Stat label="Buy now" value={formatNZD(typed.buy_now_price)} />
+            <Stat label="Bid increment" value={formatNZD(auction.bid_increment)} />
+            {auction.buy_now_price ? (
+              <Stat label="Buy now" value={formatNZD(auction.buy_now_price)} />
             ) : null}
           </div>
 
-          {/* Countdown */}
-          <div className="flex items-center gap-2 text-sm text-zinc-400">
-            <span>Time remaining:</span>
-            <CountdownTimer endTime={typed.end_time} />
-          </div>
+          {/* Countdown — only meaningful for live auctions */}
+          {!isDraft && (
+            <div className="flex items-center gap-2 text-sm text-zinc-400">
+              <span>Time remaining:</span>
+              <CountdownTimer endTime={auction.end_time} />
+            </div>
+          )}
 
           {/* Notes */}
           {vehicle.mechanical_notes && (
@@ -139,13 +153,9 @@ export default async function AuctionDetailPage({
           </div>
         </div>
 
-        {/* Right column: bid panel */}
+        {/* Right column: publish panel (draft) or bid panel (live) */}
         <div className="lg:col-span-1">
-          <BidPanel
-            auction={typed}
-            currentDealerId={currentDealerId}
-            initialBids={bids}
-          />
+          {rightPanel}
         </div>
       </div>
     </main>

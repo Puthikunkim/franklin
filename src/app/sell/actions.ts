@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getDealerId } from "@/lib/session";
-import { createDraft, updateDraft } from "@/lib/listings/service";
+import { createDraft, updateDraft, publishListing } from "@/lib/listings/service";
 import { ListingInput, ValidationErrors } from "@/lib/listings/validation";
 import { dollarsToCents } from "@/lib/money";
 
@@ -47,4 +47,21 @@ export async function updateDraftAction(_prev: FormState, formData: FormData): P
   const r = await updateDraft(dealerId, auctionId, parse(formData));
   if (!r.ok) return { errors: r.errors };
   redirect(`/auction/${auctionId}`);
+}
+
+const PUBLISH_MESSAGES: Record<string, string> = {
+  not_owner: "You can only publish your own draft.",
+  not_draft: "This listing is already published.",
+  end_in_past: "Your auction end time is in the past — edit the draft and pick a new time.",
+  no_photos: "Add at least one photo before publishing.",
+  error: "Could not publish, try again.",
+};
+
+export async function publishAction(_prev: { error?: string }, formData: FormData): Promise<{ error?: string }> {
+  const dealerId = await getDealerId();
+  if (!dealerId) redirect("/login");
+  const auctionId = String(formData.get("auctionId") || "");
+  const r = await publishListing(dealerId, auctionId);
+  if (r.ok) redirect(`/auction/${auctionId}`);
+  return { error: PUBLISH_MESSAGES[r.reason ?? "error"] ?? "Could not publish." };
 }
