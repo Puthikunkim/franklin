@@ -14,7 +14,8 @@ end;
 $$;
 
 create or replace function test_set_end_in_seconds(p_auction_id uuid, p_seconds int)
-returns void language sql as $$
+returns void language sql security definer
+set search_path = public as $$
   update auctions
     set end_time = now() + make_interval(secs => p_seconds)
   where id = p_auction_id;
@@ -34,7 +35,8 @@ returns table (
   current_winner_dealer_id  uuid,
   end_time                  timestamptz
 )
-language plpgsql as $$
+language plpgsql security definer
+set search_path = public as $$
 declare
   a             auctions%rowtype;
   v_min         int;
@@ -129,13 +131,23 @@ begin
 end;
 $$;
 
--- ── Table grants (local demo; RLS not enabled in this slice) ─────────────────
+-- ── Table grants ──────────────────────────────────────────────────────────────
+-- anon + authenticated: read-only; place_bid is the sole write path for bids.
+-- service_role: full access (Vitest test client connects as service_role).
 
-grant select, insert, update, delete on auctions    to anon, authenticated, service_role;
-grant select, insert, update, delete on bids        to anon, authenticated, service_role;
-grant select, insert, update, delete on dealers     to anon, authenticated, service_role;
-grant select, insert, update, delete on vehicles    to anon, authenticated, service_role;
-grant select, insert, update, delete on settlements to anon, authenticated, service_role;
+grant select on dealers     to anon, authenticated;
+grant select on vehicles    to anon, authenticated;
+grant select on auctions    to anon, authenticated;
+grant select on bids        to anon, authenticated;
+grant select on settlements to anon, authenticated;
+
+grant execute on function place_bid(uuid, uuid, int) to anon, authenticated;
+
+grant select, insert, update, delete on dealers     to service_role;
+grant select, insert, update, delete on vehicles    to service_role;
+grant select, insert, update, delete on auctions    to service_role;
+grant select, insert, update, delete on bids        to service_role;
+grant select, insert, update, delete on settlements to service_role;
 
 -- ── Realtime publication ──────────────────────────────────────────────────────
 
