@@ -83,4 +83,13 @@ describe("listing RPCs", () => {
     const { data: r } = await admin.rpc("publish_listing", { p_auction_id: id, p_dealer_id: OTHER });
     expect(r).toBe("not_owner");
   });
+
+  it("refuses to publish a draft whose prices violate the invariants", async () => {
+    // The publish RPC is the final gate: even if prices are made invalid out-of-band
+    // (reserve below starting), publish must reject rather than go live.
+    const { data: id } = await admin.rpc("create_draft_listing", draftArgs());
+    await admin.from("auctions").update({ reserve_price: 500000 }).eq("id", id); // < starting 1000000
+    const { data: r } = await admin.rpc("publish_listing", { p_auction_id: id, p_dealer_id: SELLER });
+    expect(r).toBe("bad_prices");
+  });
 });

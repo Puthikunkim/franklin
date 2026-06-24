@@ -53,6 +53,7 @@ const PUBLISH_MESSAGES: Record<string, string> = {
   not_owner: "You can only publish your own draft.",
   not_draft: "This listing is already published.",
   end_in_past: "Your auction end time is in the past — edit the draft and pick a new time.",
+  bad_prices: "Reserve must be at least the starting price, and buy-now above the reserve.",
   no_photos: "Add at least one photo before publishing.",
   error: "Could not publish, try again.",
 };

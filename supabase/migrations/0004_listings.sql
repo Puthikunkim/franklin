@@ -61,6 +61,9 @@ begin
   if not found or a.seller_dealer_id <> p_dealer_id then return 'not_owner'; end if;
   if a.status <> 'draft' then return 'not_draft'; end if;
   if a.end_time <= now() then return 'end_in_past'; end if;
+  if a.reserve_price < a.starting_price
+     or (a.buy_now_price is not null and a.buy_now_price <= a.reserve_price)
+  then return 'bad_prices'; end if;
   select coalesce(array_length(photo_urls, 1), 0) into v_photos from vehicles where id = a.vehicle_id;
   if v_photos < 1 then return 'no_photos'; end if;
 
