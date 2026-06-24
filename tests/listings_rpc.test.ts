@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { admin, cleanupDrafts } from "./helpers/db";
+import { admin, anon, cleanupDrafts } from "./helpers/db";
 
 const SELLER = "11111111-1111-1111-1111-111111111111";
 const OTHER = "22222222-2222-2222-2222-222222222222";
@@ -19,6 +19,17 @@ function draftArgs(overrides: Record<string, unknown> = {}) {
 
 describe("listing RPCs", () => {
   beforeEach(cleanupDrafts);
+
+  it("forbids the anon (browser) role from calling the writer RPCs", async () => {
+    // The whole security model: only service-role server code may write. The browser
+    // anon key must be rejected at the database, not just by app-layer gating.
+    const c = await anon.rpc("create_draft_listing", draftArgs());
+    expect(c.error).not.toBeNull();
+    const p = await anon.rpc("publish_listing", {
+      p_auction_id: "00000000-0000-0000-0000-000000000000", p_dealer_id: SELLER,
+    });
+    expect(p.error).not.toBeNull();
+  });
 
   it("creates a draft auction owned by the dealer, hidden from live", async () => {
     const { data: id, error } = await admin.rpc("create_draft_listing", draftArgs());

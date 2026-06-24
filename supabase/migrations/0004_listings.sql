@@ -69,6 +69,11 @@ begin
 end; $$;
 
 -- Writers are service-role only: the browser anon key must never reach these.
+-- Postgres grants EXECUTE to PUBLIC by default, and anon/authenticated inherit it,
+-- so we must explicitly revoke before granting to service_role.
+revoke execute on function create_draft_listing(uuid, text, text, int, text, int, vehicle_grade, text, text, text, text[], int, int, int, timestamptz) from public, anon, authenticated;
+revoke execute on function update_draft_listing(uuid, uuid, text, text, int, text, int, vehicle_grade, text, text, text, text[], int, int, int, timestamptz) from public, anon, authenticated;
+revoke execute on function publish_listing(uuid, uuid) from public, anon, authenticated;
 grant execute on function create_draft_listing(uuid, text, text, int, text, int, vehicle_grade, text, text, text, text[], int, int, int, timestamptz) to service_role;
 grant execute on function update_draft_listing(uuid, uuid, text, text, int, text, int, vehicle_grade, text, text, text, text[], int, int, int, timestamptz) to service_role;
 grant execute on function publish_listing(uuid, uuid) to service_role;
