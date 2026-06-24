@@ -12,3 +12,12 @@ export async function resetDb() {
   const { error } = await admin.rpc("test_reset"); // defined in migration
   if (error) throw error;
 }
+
+// Remove draft auctions (and their now-orphaned vehicles) created by listing tests.
+export async function cleanupDrafts() {
+  const { data: drafts } = await admin.from("auctions").select("id, vehicle_id").eq("status", "draft");
+  const ids = (drafts ?? []).map((d) => d.id);
+  const vids = (drafts ?? []).map((d) => d.vehicle_id);
+  if (ids.length) await admin.from("auctions").delete().in("id", ids);
+  if (vids.length) await admin.from("vehicles").delete().in("id", vids);
+}

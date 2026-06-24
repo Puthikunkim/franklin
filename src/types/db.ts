@@ -1,4 +1,4 @@
-export type AuctionStatus = "live" | "ended" | "sold" | "passed";
+export type AuctionStatus = "draft" | "live" | "ended" | "sold" | "passed";
 export type VehicleGrade = "A" | "B" | "C" | "D" | "E";
 
 export interface Dealer {
@@ -13,7 +13,7 @@ export interface Vehicle {
 }
 export interface Auction {
   id: string; vehicle_id: string; seller_dealer_id: string;
-  start_time: string; end_time: string; starting_price: number; reserve_price: number;
+  start_time: string | null; end_time: string; starting_price: number; reserve_price: number;
   buy_now_price: number | null; bid_increment: number; anti_snipe_seconds: number;
   status: AuctionStatus; current_bid: number | null; current_winner_dealer_id: string | null;
 }
