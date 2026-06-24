@@ -110,7 +110,7 @@ export default async function AuctionDetailPage({
           {/* Stats grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Stat label="Starting price" value={formatNZD(auction.starting_price)} />
-            <Stat label="Current bid" value={formatNZD(displayPrice)} highlight />
+            {!isDraft && <Stat label="Current bid" value={formatNZD(displayPrice)} highlight />}
             <Stat label="Bid increment" value={formatNZD(auction.bid_increment)} />
             {auction.buy_now_price ? (
               <Stat label="Buy now" value={formatNZD(auction.buy_now_price)} />
