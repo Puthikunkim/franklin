@@ -32,7 +32,11 @@ export async function POST(req: Request) {
     p_max_amount: coercedAmount,
   });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    // Don't leak Postgres internals to the client; log server-side instead.
+    console.error("place_bid RPC error:", error);
+    return NextResponse.json({ error: "bid_failed" }, { status: 500 });
+  }
   if (!data || (data as unknown[]).length === 0)
     return NextResponse.json({ status: "rejected", reason: "no_result" }, { status: 500 });
 

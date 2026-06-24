@@ -130,9 +130,21 @@ export function BidPanel({ auction, currentDealerId, initialBids }: BidPanelProp
           table: "bids",
           filter: `auction_id=eq.${auction.id}`,
         },
-        (payload: { new: Bid }) => {
-          const newBid = payload.new as BidWithDealer;
-          setBids((prev) => [newBid, ...prev]);
+        async (payload: { new: Bid }) => {
+          // The realtime payload is the raw bids row with no dealer join, so look
+          // up the bidder's business name before showing it — otherwise a live
+          // rival bid renders as a hashed short-id while refreshed rows show names.
+          const raw = payload.new;
+          const sb2 = browserClient();
+          const { data: dealer } = await sb2
+            .from("dealers")
+            .select("business_name")
+            .eq("id", raw.bidder_dealer_id)
+            .single();
+          const enriched: BidWithDealer = { ...raw, dealer: dealer ?? null };
+          setBids((prev) =>
+            prev.some((b) => b.id === enriched.id) ? prev : [enriched, ...prev]
+          );
         }
       )
       .subscribe((status: string, err?: Error) => {
