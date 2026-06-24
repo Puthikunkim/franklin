@@ -11,6 +11,7 @@ export type FormState = { errors?: ValidationErrors & { _form?: string } };
 function parse(formData: FormData): ListingInput {
   const dollars = (k: string) => dollarsToCents(Number(formData.get(k) || 0));
   const buyNowRaw = String(formData.get("buyNowPrice") || "").trim();
+  const endRaw = String(formData.get("endTime") || "").trim();
   return {
     make: String(formData.get("make") || ""),
     model: String(formData.get("model") || ""),
@@ -25,7 +26,9 @@ function parse(formData: FormData): ListingInput {
     startingPrice: dollars("startingPrice"),
     reservePrice: dollars("reservePrice"),
     buyNowPrice: buyNowRaw ? dollarsToCents(Number(buyNowRaw)) : null,
-    endTime: new Date(String(formData.get("endTime") || "")).toISOString(),
+    // Keep a blank/garbage date as-is so validateListing returns a friendly field error
+    // instead of new Date("").toISOString() throwing a RangeError (500).
+    endTime: endRaw && !Number.isNaN(Date.parse(endRaw)) ? new Date(endRaw).toISOString() : endRaw,
   };
 }
 
