@@ -30,6 +30,7 @@ describe("POST /api/uploads/presign", () => {
     vi.mocked(r2.r2Configured).mockReturnValueOnce(false);
     const res = await POST(req({ filename: "a.jpg", contentType: "image/jpeg", size: 1000 }));
     expect(res.status).toBe(503);
+    expect((await res.json()).error).toBe("r2_not_configured");
   });
 
   it("400 for a non-image content type", async () => {

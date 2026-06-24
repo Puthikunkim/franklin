@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   if (!Number.isFinite(size) || size <= 0 || size > MAX_BYTES)
     return NextResponse.json({ error: "invalid_file" }, { status: 400 });
 
-  const safe = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const safe = filename.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/^\.+/, "");
   const key = `listings/${crypto.randomUUID()}-${safe}`;
   const uploadUrl = await presignUpload(key, contentType);
   return NextResponse.json({ uploadUrl, publicUrl: publicUrl(key) });
