@@ -96,27 +96,28 @@ export function BidPanel({ auction, currentDealerId, initialBids }: BidPanelProp
           filter: `id=eq.${auction.id}`,
         },
         (payload: { new: Partial<Auction> }) => {
+          // Only apply fields actually present in the payload. Depending on the
+          // table's REPLICA IDENTITY a payload may omit unchanged columns; never
+          // fall back to mount-time closure values (those would silently revert state).
           const updated = payload.new;
-          const newBid = updated.current_bid ?? currentBid;
-          const newWinner = updated.current_winner_dealer_id ?? null;
-          const newEndTime = updated.end_time ?? endTime;
-          const newStatus = updated.status ?? auctionStatus;
 
-          // Detect outbid: we were winning, now we're not
-          if (
-            prevWinnerRef.current === currentDealerId &&
-            newWinner !== currentDealerId &&
-            newWinner !== null
-          ) {
-            setOutbidAlert(true);
-            setTimeout(() => setOutbidAlert(false), 5000);
+          if ("current_winner_dealer_id" in updated) {
+            const newWinner = updated.current_winner_dealer_id ?? null;
+            // Detect outbid: we were winning, now we're not
+            if (
+              prevWinnerRef.current === currentDealerId &&
+              newWinner !== currentDealerId &&
+              newWinner !== null
+            ) {
+              setOutbidAlert(true);
+              setTimeout(() => setOutbidAlert(false), 5000);
+            }
+            prevWinnerRef.current = newWinner;
+            setWinner(newWinner);
           }
-          prevWinnerRef.current = newWinner;
-
-          setCurrentBid(newBid);
-          setWinner(newWinner);
-          setEndTime(newEndTime);
-          setAuctionStatus(newStatus);
+          if (updated.current_bid != null) setCurrentBid(updated.current_bid);
+          if (updated.end_time != null) setEndTime(updated.end_time);
+          if (updated.status != null) setAuctionStatus(updated.status);
         }
       )
       .on(
@@ -189,9 +190,6 @@ export function BidPanel({ auction, currentDealerId, initialBids }: BidPanelProp
         } else if (reason === "auction_ended") {
           setMsg("This auction has already ended.");
           setAuctionStatus("ended");
-        } else if (reason === "reserve_not_met") {
-          setMsg("Bid placed but reserve price not yet met.");
-          setMsgType("info");
         } else {
           setMsg(`Bid rejected: ${reason}`);
         }
