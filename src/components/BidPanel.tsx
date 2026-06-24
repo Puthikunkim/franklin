@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import Link from "next/link";
 import { browserClient } from "@/lib/supabase/client";
 import { formatNZD } from "@/lib/money";
 import { BidStatusPill, BidStatus } from "./BidStatusPill";
@@ -41,7 +42,8 @@ export function BidPanel({ auction, currentDealerId, initialBids }: BidPanelProp
   // Track previous winner to detect outbid
   const prevWinnerRef = useRef<string | null>(winner);
 
-  const ended = isAuctionEnded(auctionStatus, endTime);
+  const [timerEnded, setTimerEnded] = useState(false);
+  const ended = isAuctionEnded(auctionStatus, endTime) || timerEnded;
 
   // Derive the bid status pill state
   const derivePillStatus = useCallback(
@@ -146,6 +148,18 @@ export function BidPanel({ auction, currentDealerId, initialBids }: BidPanelProp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auction.id]);
 
+  // One-shot timer: flip ended state when end_time passes (catches the case where
+  // the realtime UPDATE hasn't arrived yet because status hasn't been set to sold/passed).
+  useEffect(() => {
+    const ms = new Date(endTime).getTime() - Date.now();
+    if (ms <= 0) {
+      setTimerEnded(true);
+      return;
+    }
+    const t = setTimeout(() => setTimerEnded(true), ms);
+    return () => clearTimeout(t);
+  }, [endTime]);
+
   async function placeBid() {
     const dollars = Number(maxInput);
     if (!maxInput || !Number.isFinite(dollars) || dollars <= 0) {
@@ -243,7 +257,15 @@ export function BidPanel({ auction, currentDealerId, initialBids }: BidPanelProp
         )}
 
         {ended ? (
-          <p className="text-sm text-zinc-500 font-medium">This auction has ended.</p>
+          <div className="space-y-3">
+            <p className="text-sm text-zinc-500 font-medium">This auction has ended.</p>
+            <Link
+              href={`/won/${auction.id}`}
+              className="block w-full rounded-lg border border-zinc-600 bg-zinc-700 hover:bg-zinc-600 px-4 py-3 text-center text-sm font-semibold text-zinc-200 transition-colors"
+            >
+              View result →
+            </Link>
+          </div>
         ) : (
           <div className="space-y-3">
             <div className="space-y-1">
