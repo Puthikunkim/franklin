@@ -1,0 +1,18 @@
+"use client";
+import { useEffect, useState } from "react";
+
+export function CountdownTimer({ endTime }: { endTime: string }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const ms = Math.max(0, new Date(endTime).getTime() - now);
+  const m = Math.floor(ms / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  return (
+    <span className={`font-mono tabular-nums ${ms < 60000 ? "text-red-400" : "text-neutral-200"}`}>
+      {m}:{String(s).padStart(2, "0")}
+    </span>
+  );
+}
