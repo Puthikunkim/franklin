@@ -60,8 +60,9 @@ describe("listing RPCs", () => {
     const { data: r } = await admin.rpc("publish_listing", { p_auction_id: id, p_dealer_id: SELLER });
     expect(r).toBe("live");
     const { data: a } = await admin.from("auctions").select("status, start_time").eq("id", id).single();
-    expect(a.status).toBe("live");
-    expect(a.start_time).not.toBeNull();
+    expect(a).not.toBeNull();
+    expect(a!.status).toBe("live");
+    expect(a!.start_time).not.toBeNull();
   });
 
   it("refuses to publish with an end_time in the past", async () => {
