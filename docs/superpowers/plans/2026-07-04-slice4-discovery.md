@@ -626,7 +626,7 @@ git commit -m "Add watch write path: setWatch service and toggleWatchAction"
 
 **Files:**
 - Create: `src/components/FilterBar.tsx`
-- Modify: `src/app/page.tsx`
+- Modify: `src/app/page.tsx`, `src/lib/auctions.ts`
 
 **Interfaces:**
 - Consumes: `parseFilters`, `searchLiveAuctions`, `REGIONS`, `SORT_OPTIONS` (Task 2); `serverClient()`; `getDealerId()`; `AuctionCard`; `Header`.
@@ -817,19 +817,38 @@ export default async function Home({
 }
 ```
 
-- [ ] **Step 4: Verify it builds and typechecks**
+- [ ] **Step 4: Remove the now-dead `getLiveAuctions`**
+
+`getLiveAuctions` was only ever called by the home page, which now uses `searchLiveAuctions`. Delete it from `src/lib/auctions.ts` (leave `getAuctionById`, still used by the auction detail page). Remove exactly this function:
+
+```ts
+export async function getLiveAuctions() {
+  const sb = await serverClient();
+  const { data } = await sb.from("auctions")
+    .select("*, vehicle:vehicles(*), seller:dealers!auctions_seller_dealer_id_fkey(*)")
+    .eq("status", "live").order("end_time", { ascending: true });
+  return data ?? [];
+}
+```
+
+Verify nothing else references it:
+
+Run: `git grep -n "getLiveAuctions" -- src tests`
+Expected: no matches.
+
+- [ ] **Step 5: Verify it builds and typechecks**
 
 Run: `npx tsc --noEmit && npm run build`
-Expected: both succeed with no errors. (`getLiveAuctions` in `src/lib/auctions.ts` is now unused by the home page but still used by tests/other callers — leave it.)
+Expected: both succeed with no errors.
 
-- [ ] **Step 5: Manual smoke check**
+- [ ] **Step 6: Manual smoke check**
 
 Run: `npm run dev`, open `http://localhost:3000` (log in first), and confirm: the grid shows live auctions; typing "corolla" narrows to one card; the grade buttons, price inputs, region and sort selects change the URL and the grid; "Clear" resets. Stop the dev server when done.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add src/components/FilterBar.tsx src/app/page.tsx
+git add src/components/FilterBar.tsx src/app/page.tsx src/lib/auctions.ts
 git commit -m "Add FilterBar and drive the home grid from URL search params"
 ```
 
