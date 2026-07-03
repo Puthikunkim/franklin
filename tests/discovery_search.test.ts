@@ -15,6 +15,13 @@ const DRAFT = "a0000000-0000-0000-0000-0000000000d1"; // seeded Nissan Navara dr
 // a09 VW Golf          D4 Christchurch  B 780000
 const A = (n: string) => `a0000000-0000-0000-0000-000000000a0${n}`;
 
+// The shared local DB accumulates test-created live auctions from other suites
+// (e.g. listings_rpc publishes a draft to live without cleanup), which correctly
+// match these filters. Scope global-filter assertions to the seed fixture — seeded
+// auctions use the a0000000- id prefix; test-created rows use random uuids.
+const seeded = (rows: { id: string }[]) =>
+  new Set(rows.map((r) => r.id).filter((id) => id.startsWith("a0000000-")));
+
 async function search(params: Record<string, unknown>) {
   const { data, error } = await admin.rpc("search_live_auctions", {
     p_q: null, p_grades: null, p_min_price: null, p_max_price: null,
@@ -34,17 +41,17 @@ describe("search_live_auctions", () => {
 
   it("grade filter returns only auctions of that grade", async () => {
     const rows = await search({ p_grades: ["A"] });
-    expect(new Set(rows.map((r) => r.id))).toEqual(new Set([A("2"), A("4"), A("5"), A("8")]));
+    expect(seeded(rows)).toEqual(new Set([A("2"), A("4"), A("5"), A("8")]));
   });
 
   it("price range filters on the current price (cents)", async () => {
     const rows = await search({ p_min_price: 1000000, p_max_price: 1300000 });
-    expect(new Set(rows.map((r) => r.id))).toEqual(new Set([A("4"), A("8")]));
+    expect(seeded(rows)).toEqual(new Set([A("4"), A("8")]));
   });
 
   it("region filter matches the seller dealer's region", async () => {
     const rows = await search({ p_region: "Auckland" });
-    expect(new Set(rows.map((r) => r.id))).toEqual(new Set([A("1"), A("6")]));
+    expect(seeded(rows)).toEqual(new Set([A("1"), A("6")]));
   });
 
   it("sort price_asc orders by current price ascending", async () => {
