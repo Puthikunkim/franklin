@@ -44,3 +44,11 @@ export async function publishListing(dealerId: string, auctionId: string): Promi
   if (error) return { ok: false, reason: "error" };
   return data === "live" ? { ok: true } : { ok: false, reason: data as string };
 }
+
+export async function discardDraft(dealerId: string, auctionId: string): Promise<{ ok: boolean; reason?: string }> {
+  const { data, error } = await serviceClient().rpc("discard_draft_listing", {
+    p_auction_id: auctionId, p_dealer_id: dealerId,
+  });
+  if (error) return { ok: false, reason: "error" };
+  return data === "discarded" ? { ok: true } : { ok: false, reason: data as string };
+}
