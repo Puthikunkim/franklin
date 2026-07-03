@@ -146,3 +146,18 @@ select 'a0000000-0000-0000-0000-000000000a09', v.id,
   now() + interval '5 minutes',
   780000, 920000, 1150000
 from v;
+
+-- ── Draft listing (Slice 3 dashboard: a draft owned by dealer 1) ───────────────
+with v as (
+  insert into vehicles (id, make, model, year, variant, odometer_km, grade, color, mechanical_notes, appraisal_notes, photo_urls)
+  values ('aaaaaaad-0000-0000-0000-00000000000d','Nissan','Navara',2022,'ST-X',22000,'A','Slate Grey',
+    'As new. Balance of factory warranty.','Fresh trade, immaculate.',
+    array['https://media.example-r2.dev/navara-1.jpg'])
+  returning id
+)
+insert into auctions (id, vehicle_id, seller_dealer_id, start_time, end_time, status, starting_price, reserve_price, buy_now_price)
+select 'a0000000-0000-0000-0000-0000000000d1', v.id,
+  '11111111-1111-1111-1111-111111111111',
+  null, now() + interval '3 days', 'draft',
+  1500000, 1750000, 2100000
+from v;
