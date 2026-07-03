@@ -5,6 +5,7 @@ import { serverClient } from "@/lib/supabase/server";
 import { formatNZD } from "@/lib/money";
 import { Header } from "@/components/Header";
 import { DashboardSection } from "@/components/DashboardSection";
+import { DiscardDraftButton } from "@/components/DiscardDraftButton";
 import { getMyListings, getMyBiddingAuctions, getMyWins, getMySales } from "@/lib/dashboard";
 
 function vehicleLabel(v: { year: number; make: string; model: string }) {
@@ -33,10 +34,13 @@ export default async function DashboardPage() {
 
         <DashboardSection title="My listings" count={listings.length} empty="You haven't listed any vehicles yet.">
           {listings.map((a: any) => (
-            <Link key={a.id} href={`/auction/${a.id}`} className={rowClass}>
-              <span className="text-white">{vehicleLabel(a.vehicle)}</span>
-              <span className="text-xs uppercase tracking-wide text-zinc-400">{a.status}</span>
-            </Link>
+            <div key={a.id} className={rowClass}>
+              <Link href={`/auction/${a.id}`} className="text-white hover:underline">{vehicleLabel(a.vehicle)}</Link>
+              <span className="flex items-center gap-3">
+                <span className="text-xs uppercase tracking-wide text-zinc-400">{a.status}</span>
+                {a.status === "draft" && <DiscardDraftButton auctionId={a.id} />}
+              </span>
+            </div>
           ))}
         </DashboardSection>
 
