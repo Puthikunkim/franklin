@@ -9,6 +9,10 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // Integration tests share ONE local Supabase DB and mutate global fixtures
+    // (test_reset/cleanupDrafts), so run test files sequentially — parallel files
+    // otherwise stomp each other's state and fail nondeterministically.
+    fileParallelism: false,
     // Playwright e2e specs use their own runner; keep them out of vitest.
     exclude: ["**/node_modules/**", "**/dist/**", "tests/e2e/**"],
     env: {
