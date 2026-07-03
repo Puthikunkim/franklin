@@ -25,6 +25,10 @@ export async function getMyBiddingAuctions(sb: SupabaseClient, dealerId: string)
     .select(AUCTION_WITH_VEHICLE)
     .in("id", ids)
     .eq("status", "live")
+    // Exclude auctions whose timer has passed (still 'live' until close_auction runs)
+    // so "Bidding on" means genuinely biddable — a won-but-unclosed auction belongs in
+    // "My wins", not here.
+    .gt("end_time", new Date().toISOString())
     .order("end_time", { ascending: true });
   return data ?? [];
 }

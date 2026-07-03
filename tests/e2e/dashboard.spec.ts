@@ -11,7 +11,6 @@ test("dealer sees their activity and can discard a draft", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "My activity" })).toBeVisible();
 
   // The seeded Nissan Navara draft appears under My listings with a Draft status + Discard.
-  const draftRow = page.locator("div", { hasText: "2022 Nissan Navara" }).last();
   await expect(page.getByText("2022 Nissan Navara")).toBeVisible();
 
   // Discard it (two-step confirm) and confirm it disappears.
