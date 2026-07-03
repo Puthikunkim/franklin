@@ -21,7 +21,7 @@ export default async function EditDraftPage({ params }: { params: Promise<{ id: 
         photoUrls: v.photo_urls ?? [],
         startingPrice: String(a.starting_price / 100), reservePrice: String(a.reserve_price / 100),
         buyNowPrice: a.buy_now_price ? String(a.buy_now_price / 100) : "",
-        endTime: new Date(a.end_time).toISOString().slice(0, 16),
+        endTime: a.end_time, // raw UTC ISO; EndTimeField converts to the browser's local time
       }} />
     </main>
   );

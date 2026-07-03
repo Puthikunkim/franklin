@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { PhotoUploader } from "./PhotoUploader";
+import { EndTimeField } from "./EndTimeField";
 import type { FormState } from "@/app/sell/actions";
 
 type Action = (prev: FormState, formData: FormData) => Promise<FormState>;
@@ -63,7 +64,7 @@ export function ListingForm({ action, initial = {}, submitLabel }:
       </div>
 
       <label className="block space-y-1"><span className="text-xs text-zinc-400">Auction ends</span>
-        <input name="endTime" type="datetime-local" defaultValue={initial.endTime} className={field} />
+        <EndTimeField defaultUtc={initial.endTime} className={field} />
         {err.endTime && <span className="text-xs text-red-400">{err.endTime}</span>}</label>
 
       <div className="space-y-1"><span className="text-xs text-zinc-400">Photos</span>
