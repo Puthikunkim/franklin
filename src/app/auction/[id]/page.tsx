@@ -8,6 +8,8 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import { DealerBadge } from "@/components/DealerBadge";
 import { getAuctionById } from "@/lib/auctions";
 import { serverClient } from "@/lib/supabase/server";
+import { getWatchedAuctionIds } from "@/lib/discovery";
+import { WatchButton } from "@/components/WatchButton";
 
 type BidRow = Bid & { dealer: Pick<Dealer, "business_name"> | null };
 
@@ -40,6 +42,13 @@ export default async function AuctionDetailPage({
       .eq("auction_id", id)
       .order("created_at", { ascending: false });
     bids = (bidsRaw ?? []) as BidRow[];
+  }
+
+  // Watch state for live auctions (drafts are not watchable).
+  let isWatched = false;
+  if (!isDraft) {
+    const sbWatch = await serverClient();
+    isWatched = (await getWatchedAuctionIds(sbWatch, currentDealerId)).includes(id);
   }
 
   const { vehicle, seller } = auction;
@@ -94,12 +103,15 @@ export default async function AuctionDetailPage({
 
           {/* Vehicle title */}
           <div>
-            <h1 className="text-2xl font-bold text-white leading-tight">
-              {vehicle.year} {vehicle.make} {vehicle.model}
-              {vehicle.variant ? (
-                <span className="font-normal text-zinc-400"> {vehicle.variant}</span>
-              ) : null}
-            </h1>
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="text-2xl font-bold text-white leading-tight">
+                {vehicle.year} {vehicle.make} {vehicle.model}
+                {vehicle.variant ? (
+                  <span className="font-normal text-zinc-400"> {vehicle.variant}</span>
+                ) : null}
+              </h1>
+              {!isDraft && <WatchButton auctionId={auction.id} watched={isWatched} />}
+            </div>
             <p className="mt-1 text-sm text-zinc-400">
               {vehicle.odometer_km.toLocaleString("en-NZ")} km
               {vehicle.color ? ` · ${vehicle.color}` : ""}

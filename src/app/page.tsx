@@ -1,7 +1,7 @@
 import { getDealerId } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { serverClient } from "@/lib/supabase/server";
-import { searchLiveAuctions, parseFilters } from "@/lib/discovery";
+import { searchLiveAuctions, parseFilters, getWatchedAuctionIds } from "@/lib/discovery";
 import { AuctionCard } from "@/components/AuctionCard";
 import { FilterBar } from "@/components/FilterBar";
 import { Header } from "@/components/Header";
@@ -11,11 +11,16 @@ export default async function Home({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  if (!(await getDealerId())) redirect("/login");
+  const dealerId = await getDealerId();
+  if (!dealerId) redirect("/login");
 
   const filters = parseFilters(await searchParams);
   const sb = await serverClient();
-  const auctions = await searchLiveAuctions(sb, filters);
+  const [auctions, watchedIds] = await Promise.all([
+    searchLiveAuctions(sb, filters),
+    getWatchedAuctionIds(sb, dealerId),
+  ]);
+  const watched = new Set(watchedIds);
 
   return (
     <main className="mx-auto max-w-6xl p-6">
@@ -30,6 +35,7 @@ export default async function Home({
             <AuctionCard
               key={a.id}
               auction={a as Parameters<typeof AuctionCard>[0]["auction"]}
+              watched={watched.has(a.id)}
             />
           ))}
         </div>

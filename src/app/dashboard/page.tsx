@@ -7,6 +7,7 @@ import { Header } from "@/components/Header";
 import { DashboardSection } from "@/components/DashboardSection";
 import { DiscardDraftButton } from "@/components/DiscardDraftButton";
 import { getMyListings, getMyBiddingAuctions, getMyWins, getMySales } from "@/lib/dashboard";
+import { getMyWatching } from "@/lib/discovery";
 
 function vehicleLabel(v: { year: number; make: string; model: string }) {
   return `${v.year} ${v.make} ${v.model}`;
@@ -17,11 +18,12 @@ export default async function DashboardPage() {
   if (!dealerId) redirect("/login");
 
   const sb = await serverClient();
-  const [listings, bidding, wins, sales] = await Promise.all([
+  const [listings, bidding, wins, sales, watching] = await Promise.all([
     getMyListings(sb, dealerId),
     getMyBiddingAuctions(sb, dealerId),
     getMyWins(sb, dealerId),
     getMySales(sb, dealerId),
+    getMyWatching(sb, dealerId),
   ]);
 
   const rowClass = "flex items-center justify-between rounded border border-zinc-800 bg-zinc-900/50 px-4 py-3";
@@ -81,6 +83,15 @@ export default async function DashboardPage() {
               </Link>
             );
           })}
+        </DashboardSection>
+
+        <DashboardSection title="Watching" count={watching.length} empty="You're not watching any auctions.">
+          {watching.map((a: any) => (
+            <Link key={a.id} href={`/auction/${a.id}`} className={rowClass}>
+              <span className="text-white">{vehicleLabel(a.vehicle)}</span>
+              <span className="font-mono text-zinc-300">{formatNZD(a.current_bid ?? a.starting_price)}</span>
+            </Link>
+          ))}
         </DashboardSection>
       </main>
     </>
