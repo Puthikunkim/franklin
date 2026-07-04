@@ -60,6 +60,16 @@ describe("search_live_auctions", () => {
     expect(prices).toEqual([...prices].sort((x, y) => x - y));
   });
 
+  it("sort price_desc orders by current price descending", async () => {
+    const rows = await search({ p_sort: "price_desc" });
+    const prices = rows.map((r) => r.starting_price);
+    expect(prices).toEqual([...prices].sort((x, y) => y - x));
+  });
+
+  // No `newest` (start_time desc) test: every live seed auction is inserted in one
+  // transaction so they share a single now() start_time — `newest` collapses to the
+  // end_time tiebreaker and can't be distinguished from the default here.
+
   it("default sort is ending_soon (end_time ascending)", async () => {
     const rows = await search({});
     const times = rows.map((r) => new Date(r.end_time).getTime());
