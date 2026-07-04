@@ -10,6 +10,7 @@ import { getAuctionById } from "@/lib/auctions";
 import { serverClient } from "@/lib/supabase/server";
 import { getWatchedAuctionIds } from "@/lib/discovery";
 import { WatchButton } from "@/components/WatchButton";
+import { Header } from "@/components/Header";
 
 type BidRow = Bid & { dealer: Pick<Dealer, "business_name"> | null };
 
@@ -67,6 +68,7 @@ export default async function AuctionDetailPage({
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
+      <Header />
       {/* Back nav */}
       <a
         href="/"
