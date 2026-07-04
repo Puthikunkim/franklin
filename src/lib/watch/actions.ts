@@ -15,7 +15,12 @@ export async function toggleWatchAction(
   const watched = String(formData.get("watched")) === "true";
   const r = await setWatch(dealerId, auctionId, watched);
   if (!r.ok) return { error: "Could not update your watchlist, try again." };
+  // Every surface that shows watch state must be revalidated: the home grid
+  // (card hearts), the dashboard "Watching" section, and the auction detail
+  // page's own WatchButton. Omitting the detail path leaves a stale button
+  // when arriving there via a prefetched/cached client navigation.
   revalidatePath("/");
   revalidatePath("/dashboard");
+  if (auctionId) revalidatePath(`/auction/${auctionId}`);
   return {};
 }
