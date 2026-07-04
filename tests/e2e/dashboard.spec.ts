@@ -5,6 +5,10 @@ test("dealer sees their activity and can discard a draft", async ({ page }) => {
   // Log in as the dealer who owns the seeded draft (Auckland Motor Wholesale = dealer 1).
   await page.getByRole("button", { name: /Auckland Motor Wholesale/ }).click();
   await expect(page).toHaveURL("/");
+  // Let the home page's background Link prefetch (Next.js dev) settle before
+  // navigating again — clicking immediately can race the in-flight prefetch
+  // for /dashboard and silently drop the navigation.
+  await page.waitForLoadState("networkidle");
 
   await page.getByRole("link", { name: "Dashboard" }).click();
   await expect(page).toHaveURL("/dashboard");
