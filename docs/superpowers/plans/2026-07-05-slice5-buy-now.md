@@ -47,7 +47,7 @@
 
 **Interfaces:**
 - Consumes: existing `auctions`/`settlements` tables; `place_bid` RPC; `test_reset`/`resetDb`; `getMyWins`/`getMySales` from `src/lib/dashboard.ts`; seed auction `a03` (Honda CR-V, seller = dealer 3 `3333…`, `buy_now_price = 1100000`, no bids after reset).
-- Produces: `buy_now_listing(p_auction_id uuid, p_buyer_dealer_id uuid) returns text` — `service_role`-only. Returns `'sold'` on success; `'not_found'` / `'no_buy_now'` / `'has_bids'` / `'is_seller'` / or the current non-live `status` string otherwise. On success sets `status='sold'`, `current_bid=buy_now_price`, `current_winner_dealer_id=buyer`, `end_time=now()`, and inserts a settlement (`sale_price=buy_now_price`, default fees) `on conflict do nothing`.
+- Produces: `buy_now_listing(p_auction_id uuid, p_buyer_dealer_id uuid) returns text` — `service_role`-only. Returns the distinct token `'bought'` on a fresh successful purchase; `'not_found'` / `'no_buy_now'` / `'has_bids'` / `'is_seller'` / or the current non-live `status` string (`'sold'`/`'ended'`/`'passed'`/`'draft'`) otherwise. The success token must be distinct from the `'sold'` status so a second buyer on an already-sold auction is NOT told they succeeded. On success sets `status='sold'`, `current_bid=buy_now_price`, `current_winner_dealer_id=buyer`, `end_time=now()`, and inserts a settlement (`sale_price=buy_now_price`, default fees) `on conflict do nothing`.
 
 - [ ] **Step 1: Write the migration**
 
@@ -78,7 +78,7 @@ begin
   insert into settlements (auction_id, sale_price)
      values (p_auction_id, a.buy_now_price)
      on conflict (auction_id) do nothing;        -- never resell / double-settle
-  return 'sold';
+  return 'bought';   -- distinct from the 'sold' STATUS: only a fresh purchase returns this
 end; $$;
 
 -- Writer is service-role only: revoke the PostgreSQL default PUBLIC grant that
@@ -119,7 +119,7 @@ describe("buy_now_listing", () => {
   beforeEach(resetDb);
 
   it("sells a live, un-bid auction to a non-seller buyer and settles it", async () => {
-    expect(await buyNow(CRV, D1)).toBe("sold");
+    expect(await buyNow(CRV, D1)).toBe("bought");
     const { data: a } = await admin.from("auctions").select("*").eq("id", CRV).single();
     expect(a!.status).toBe("sold");
     expect(a!.current_winner_dealer_id).toBe(D1);
@@ -147,9 +147,9 @@ describe("buy_now_listing", () => {
     expect(await buyNow(CRV, D1)).toBe("no_buy_now");
   });
 
-  it("is idempotent — a second buy returns the sold status and never double-settles", async () => {
-    await buyNow(CRV, D1);
-    expect(await buyNow(CRV, D2)).toBe("sold"); // status <> 'live' → returns current status, no change
+  it("is idempotent — a second buy returns the sold status (not 'bought') and never double-settles", async () => {
+    expect(await buyNow(CRV, D1)).toBe("bought");
+    expect(await buyNow(CRV, D2)).toBe("sold"); // already-sold status, NOT a fresh purchase
     const { data: s } = await admin.from("settlements").select("id").eq("auction_id", CRV);
     expect(s).toHaveLength(1);
     const { data: a } = await admin.from("auctions").select("current_winner_dealer_id").eq("id", CRV).single();
@@ -192,7 +192,7 @@ git commit -m "Add buy_now_listing RPC for instant purchase of an un-bid auction
 **Interfaces:**
 - Consumes: `buy_now_listing` RPC (Task 1); `serviceClient()` from `@/lib/supabase/service`; `getDealerId()` from `@/lib/session`; `revalidatePath` (next/cache); `redirect` (next/navigation).
 - Produces:
-  - `buyNow(dealerId: string, auctionId: string): Promise<{ ok: boolean; reason?: string }>` — `{ ok: true }` when the RPC returns `'sold'`, else `{ ok: false, reason: <status> }`.
+  - `buyNow(dealerId: string, auctionId: string): Promise<{ ok: boolean; reason?: string }>` — `{ ok: true }` when the RPC returns `'bought'` (a fresh purchase), else `{ ok: false, reason: <token> }`.
   - `buyNowAction(_prev: { error?: string }, formData: FormData): Promise<{ error?: string }>` (`"use server"`) — cookie identity (redirect `/login` if absent); on success revalidates `/`, `/dashboard`, `/auction/${auctionId}` then `redirect('/won/${auctionId}')`; on failure returns a friendly `{ error }`.
 
 - [ ] **Step 1: Read the Next.js docs for the action**
@@ -249,7 +249,9 @@ export async function buyNow(
     p_buyer_dealer_id: dealerId,
   });
   if (error) return { ok: false, reason: "error" };
-  return data === "sold" ? { ok: true } : { ok: false, reason: data as string };
+  // 'bought' means THIS call completed the purchase. Any other token (including the
+  // 'sold' STATUS of an already-sold auction) is a failure for this buyer.
+  return data === "bought" ? { ok: true } : { ok: false, reason: data as string };
 }
 ```
 

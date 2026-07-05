@@ -61,8 +61,11 @@ update auctions
 insert into settlements (auction_id, sale_price)
    values (p_auction_id, <buy_now_price>)
    on conflict (auction_id) do nothing;   -- mirrors close_auction
-return 'sold';
+return 'bought';   -- distinct token from the 'sold' STATUS returned by the non-live guard
 ```
+The success token is `'bought'`, deliberately distinct from the `'sold'` *status* that
+the `status <> 'live'` guard returns for an already-sold auction — otherwise a second buyer
+clicking Buy-now on an auction someone else already bought would be told they succeeded.
 `end_time = now()` matters: `getMyWins` filters `end_time <= now()`, so without it a buy-now
 win (bought before the timer expired) would never appear on the dashboard. Because publish
 enforces `buy_now_price > reserve_price`, the sale price is always `>= reserve`, so the
@@ -106,9 +109,9 @@ No schema/columns change (`buy_now_price`, `current_bid`, `current_winner_dealer
     now-ish, and a settlement exists with `sale_price = buy_now_price` and the default
     `seller_fee`/`buyer_fee`.
   - Guards: `has_bids` (place a bid via `place_bid`, then buy → `'has_bids'`, unchanged);
-    `is_seller` (seller buys own → `'is_seller'`); already-sold (buy twice → second returns
-    `'sold'` and does not double-insert a settlement); `no_buy_now` (an auction with
-    `buy_now_price = null` → `'no_buy_now'`).
+    `is_seller` (seller buys own → `'is_seller'`); already-sold (first buy returns `'bought'`,
+    a second buy returns the `'sold'` status — NOT `'bought'` — and does not double-insert a
+    settlement); `no_buy_now` (an auction with `buy_now_price = null` → `'no_buy_now'`).
   - Dashboard integration: after a buy-now, the auction appears in the buyer's `getMyWins`
     and the seller's `getMySales`.
   - Security: an anon-role `rpc('buy_now_listing', …)` call is denied (regression, mirrors
