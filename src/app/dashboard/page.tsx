@@ -6,6 +6,7 @@ import { formatNZD } from "@/lib/money";
 import { Header } from "@/components/Header";
 import { DashboardSection } from "@/components/DashboardSection";
 import { DiscardDraftButton } from "@/components/DiscardDraftButton";
+import { UnpublishButton } from "@/components/UnpublishButton";
 import { getMyListings, getMyBiddingAuctions, getMyWins, getMySales } from "@/lib/dashboard";
 import { getMyWatching } from "@/lib/discovery";
 
@@ -41,6 +42,7 @@ export default async function DashboardPage() {
               <span className="flex items-center gap-3">
                 <span className="text-xs uppercase tracking-wide text-zinc-400">{a.status}</span>
                 {a.status === "draft" && <DiscardDraftButton auctionId={a.id} />}
+                {a.status === "live" && a.current_bid == null && <UnpublishButton auctionId={a.id} />}
               </span>
             </div>
           ))}
