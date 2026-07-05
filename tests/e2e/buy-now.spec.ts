@@ -13,8 +13,8 @@ test("dealer buys a live auction outright with Buy now", async ({ page }) => {
   // before pushing ?q=Honda via router.replace; wait for that URL update (so
   // the debounce has actually fired) and for the resulting RSC fetch to settle
   // before clicking — otherwise the click can race the in-flight search
-  // navigation and get silently dropped (see dashboard.spec.ts / discovery.spec.ts
-  // for the same class of race with Next.js dev navigation).
+  // navigation and get silently dropped (conceptually the same class of Next.js
+  // dev-navigation race that dashboard.spec.ts guards with a networkidle wait).
   await page.getByPlaceholder("Search make, model, variant").fill("Honda");
   await expect(page).toHaveURL(/[?&]q=Honda/);
   await page.waitForLoadState("networkidle");
@@ -35,4 +35,6 @@ test("dealer buys a live auction outright with Buy now", async ({ page }) => {
   await expect(page.getByText("Auction sold")).toBeVisible();
   await expect(page.getByText("$11,000")).toBeVisible(); // buy_now_price sale price
   await expect(page.getByText("Buyer fee")).toBeVisible();
+  // exact:true so it matches the buyer fee ("$20") and not the seller fee ("$200").
+  await expect(page.getByText("$20", { exact: true })).toBeVisible(); // default buyer_fee = 2000c
 });
