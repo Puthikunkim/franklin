@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { admin, anon, resetDb } from "./helpers/db";
 import { getMyWins, getMySales } from "../src/lib/dashboard";
 
@@ -18,6 +18,12 @@ async function buyNow(auction: string, buyer: string) {
 
 describe("buy_now_listing", () => {
   beforeEach(resetDb);
+
+  // The "no buy_now_price" test nulls a03.buy_now_price via a raw update; restore it
+  // here so that mutation can't leak into later tests/files sharing this local DB.
+  afterEach(async () => {
+    await admin.from("auctions").update({ buy_now_price: CRV_BUY_NOW }).eq("id", CRV);
+  });
 
   it("sells a live, un-bid auction to a non-seller buyer and settles it", async () => {
     expect(await buyNow(CRV, D1)).toBe("bought");
