@@ -52,3 +52,11 @@ export async function discardDraft(dealerId: string, auctionId: string): Promise
   if (error) return { ok: false, reason: "error" };
   return data === "discarded" ? { ok: true } : { ok: false, reason: data as string };
 }
+
+export async function unpublishListing(dealerId: string, auctionId: string): Promise<{ ok: boolean; reason?: string }> {
+  const { data, error } = await serviceClient().rpc("unpublish_listing", {
+    p_auction_id: auctionId, p_dealer_id: dealerId,
+  });
+  if (error) return { ok: false, reason: "error" };
+  return data === "reverted" ? { ok: true } : { ok: false, reason: data as string };
+}

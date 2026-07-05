@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDealerId } from "@/lib/session";
-import { discardDraft } from "@/lib/listings/service";
+import { discardDraft, unpublishListing } from "@/lib/listings/service";
 
 const DISCARD_MESSAGES: Record<string, string> = {
   not_owner: "You can only discard your own draft.",
@@ -21,4 +21,25 @@ export async function discardDraftAction(_prev: { error?: string }, formData: Fo
     return {};
   }
   return { error: DISCARD_MESSAGES[r.reason ?? "error"] ?? "Could not discard." };
+}
+
+const UNPUBLISH_MESSAGES: Record<string, string> = {
+  not_owner: "You can only unpublish your own listing.",
+  not_live: "This listing isn't live.",
+  has_bids: "This listing has bids and can't be unpublished.",
+  error: "Could not unpublish, try again.",
+};
+
+export async function unpublishAction(_prev: { error?: string }, formData: FormData): Promise<{ error?: string }> {
+  const dealerId = await getDealerId();
+  if (!dealerId) redirect("/login");
+  const auctionId = String(formData.get("auctionId") || "");
+  const r = await unpublishListing(dealerId, auctionId);
+  if (r.ok) {
+    revalidatePath("/dashboard");
+    revalidatePath("/");
+    revalidatePath(`/auction/${auctionId}`);
+    return {};
+  }
+  return { error: UNPUBLISH_MESSAGES[r.reason ?? "error"] ?? "Could not unpublish." };
 }
