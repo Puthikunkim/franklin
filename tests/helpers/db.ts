@@ -29,26 +29,36 @@ export async function cleanupDrafts() {
   if (vids.length) await admin.from("vehicles").delete().in("id", vids);
 }
 
-// Create a published (live), un-bid auction owned by `dealer` and return its id.
+// Create a DRAFT auction (vehicle + draft) owned by `dealer` and return its id.
 // The caller is responsible for cleanup via deleteAuctions([...]).
-export async function createLiveAuction(dealer: string): Promise<string> {
+export async function createDraftAuction(dealer: string): Promise<string> {
   const { data: id } = await admin.rpc("create_draft_listing", {
     p_dealer_id: dealer, p_make: "Kia", p_model: "Sportage", p_year: 2021, p_variant: "GT",
     p_odometer_km: 30000, p_grade: "A", p_color: "Red", p_mechanical_notes: "", p_appraisal_notes: "",
     p_photo_urls: ["https://img/1.jpg"], p_starting_price: 1000000, p_reserve_price: 1200000,
     p_buy_now_price: 1500000, p_end_time: new Date(Date.now() + 2 * 86400000).toISOString(),
   });
-  await admin.rpc("publish_listing", { p_auction_id: id, p_dealer_id: dealer });
   return id as string;
 }
 
-// Delete test-created auctions and their bids + vehicles (FK-safe order), so
-// reverted-to-draft or leftover-live fixtures never leak into later shared-DB tests.
+// Create a published (live), un-bid auction owned by `dealer` and return its id.
+// The caller is responsible for cleanup via deleteAuctions([...]).
+export async function createLiveAuction(dealer: string): Promise<string> {
+  const id = await createDraftAuction(dealer);
+  await admin.rpc("publish_listing", { p_auction_id: id, p_dealer_id: dealer });
+  return id;
+}
+
+// Delete test-created auctions and everything that FK-references them — bids and
+// settlements first, then the auctions, then their vehicles (none of these FKs
+// cascade) — so reverted-to-draft, leftover-live, or settled fixtures never leak
+// into later shared-DB tests.
 export async function deleteAuctions(ids: string[]): Promise<void> {
   if (!ids.length) return;
   const { data: rows } = await admin.from("auctions").select("vehicle_id").in("id", ids);
   const vids = (rows ?? []).map((r: { vehicle_id: string }) => r.vehicle_id);
   await admin.from("bids").delete().in("auction_id", ids);
+  await admin.from("settlements").delete().in("auction_id", ids);
   await admin.from("auctions").delete().in("id", ids);
   if (vids.length) await admin.from("vehicles").delete().in("id", vids);
 }

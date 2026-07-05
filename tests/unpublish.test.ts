@@ -1,13 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { admin, anon, resetDb, createLiveAuction, deleteAuctions } from "./helpers/db";
+import { admin, anon, resetDb, createDraftAuction, createLiveAuction, deleteAuctions } from "./helpers/db";
 
 const D1 = "11111111-1111-1111-1111-111111111111"; // owner
 const D2 = "22222222-2222-2222-2222-222222222222"; // another dealer
-const SEED_DRAFT = "a0000000-0000-0000-0000-0000000000d1"; // seeded Nissan Navara draft (dealer 1)
 
 const created: string[] = [];
 async function makeLive(dealer = D1): Promise<string> {
   const id = await createLiveAuction(dealer);
+  created.push(id);
+  return id;
+}
+async function makeDraft(dealer = D1): Promise<string> {
+  const id = await createDraftAuction(dealer);
   created.push(id);
   return id;
 }
@@ -39,7 +43,10 @@ describe("unpublish_listing", () => {
   });
 
   it("refuses a non-live auction (a draft)", async () => {
-    expect(await unpublish(SEED_DRAFT, D1)).toBe("not_live");
+    // Own-fixture draft, not the seeded one: dashboard tests' cleanupDrafts()
+    // deletes the seeded draft, so relying on it is order-fragile.
+    const draftId = await makeDraft(D1);
+    expect(await unpublish(draftId, D1)).toBe("not_live");
   });
 
   it("refuses once bidding has started and leaves it live", async () => {
