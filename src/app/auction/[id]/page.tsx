@@ -11,6 +11,7 @@ import { serverClient } from "@/lib/supabase/server";
 import { getWatchedAuctionIds } from "@/lib/discovery";
 import { WatchButton } from "@/components/WatchButton";
 import { Header } from "@/components/Header";
+import { BuyNowButton } from "@/components/BuyNowButton";
 
 type BidRow = Bid & { dealer: Pick<Dealer, "business_name"> | null };
 
@@ -65,6 +66,15 @@ export default async function AuctionDetailPage({
       initialBids={bids}
     />
   );
+
+  // Buy-now is offered only on a live auction that still has no bids, has a
+  // buy-now price, and is being viewed by someone other than the seller.
+  const canBuyNow =
+    !isDraft &&
+    auction.status === "live" &&
+    auction.buy_now_price != null &&
+    auction.current_bid == null &&
+    auction.seller_dealer_id !== currentDealerId;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
@@ -167,8 +177,11 @@ export default async function AuctionDetailPage({
           </div>
         </div>
 
-        {/* Right column: publish panel (draft) or bid panel (live) */}
-        <div className="lg:col-span-1">
+        {/* Right column: buy-now (when eligible) above the publish/bid panel */}
+        <div className="lg:col-span-1 space-y-4">
+          {canBuyNow && (
+            <BuyNowButton auctionId={auction.id} buyNowPrice={auction.buy_now_price!} />
+          )}
           {rightPanel}
         </div>
       </div>
