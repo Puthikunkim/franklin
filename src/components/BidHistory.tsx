@@ -15,34 +15,38 @@ function shortId(id: string): string {
 export function BidHistory({ bids }: { bids: BidWithDealer[] }) {
   if (bids.length === 0) {
     return (
-      <p className="text-sm text-zinc-500 py-4 text-center">No bids yet.</p>
+      <p className="py-4 text-center text-sm text-fog">No bids yet.</p>
     );
   }
   return (
-    <div className="overflow-hidden rounded-lg border border-zinc-700">
+    <div className="overflow-hidden rounded-lg border border-line">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-zinc-700 bg-zinc-800/60 text-zinc-400 text-xs uppercase tracking-wide">
-            <th className="px-4 py-2 text-left">Amount</th>
-            <th className="px-4 py-2 text-left">Dealer</th>
-            <th className="px-4 py-2 text-right">Time</th>
+          <tr className="border-b border-line bg-panel font-mono text-[10px] uppercase tracking-[0.12em] text-fog">
+            <th className="px-4 py-2 text-left font-semibold">Amount</th>
+            <th className="px-4 py-2 text-left font-semibold">Dealer</th>
+            <th className="px-4 py-2 text-right font-semibold">Time</th>
           </tr>
         </thead>
         <tbody>
           {bids.map((bid, i) => (
             <tr
               key={bid.id}
-              className={`border-b border-zinc-700/50 last:border-0 ${
-                i === 0 ? "bg-zinc-700/30" : ""
+              className={`border-b border-line/60 last:border-0 ${
+                i === 0 ? "bg-signal/5" : ""
               }`}
             >
-              <td className="px-4 py-3 font-mono font-semibold text-white">
+              <td
+                className={`px-4 py-3 font-mono font-semibold tabular-nums ${
+                  i === 0 ? "text-signal" : "text-chalk"
+                }`}
+              >
                 {formatNZD(bid.amount)}
               </td>
-              <td className="px-4 py-3 text-zinc-300">
+              <td className="px-4 py-3 text-fog">
                 {bid.dealer?.business_name ?? shortId(bid.bidder_dealer_id)}
               </td>
-              <td className="px-4 py-3 text-right text-zinc-500 font-mono text-xs">
+              <td className="px-4 py-3 text-right font-mono text-xs text-fog">
                 {formatTime(bid.created_at)}
               </td>
             </tr>

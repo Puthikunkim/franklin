@@ -45,30 +45,30 @@ export default async function NotificationsPage() {
   // Clear the unread badge for next time — mutation during render, same pattern /won uses.
   await markNotificationsRead(dealerId);
 
-  const rowClass = "flex items-center justify-between rounded border px-4 py-3";
+  const rowClass = "flex items-center justify-between rounded-lg border px-4 py-3 transition-colors";
 
   return (
     <>
       <Header />
       <main className="mx-auto max-w-2xl px-6 py-8 space-y-8">
-        <h1 className="text-2xl font-bold text-white">Notifications</h1>
+        <h1 className="font-display text-2xl font-bold text-chalk">Notifications</h1>
 
         {endingSoon.length > 0 && (
           <section className="space-y-2">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Ending soon</h2>
+            <h2 className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-fog">Ending soon</h2>
             {endingSoon.map((a: any) => (
-              <Link key={a.id} href={`/auction/${a.id}`} className={`${rowClass} border-amber-700 bg-amber-950/30`}>
-                <span className="text-white">{vehicleLabel(a.vehicle)}</span>
-                <span className="font-mono text-amber-300">{formatNZD(a.current_bid ?? a.starting_price)}</span>
+              <Link key={a.id} href={`/auction/${a.id}`} className={`${rowClass} border-signal/40 bg-signal/10 hover:border-signal/60`}>
+                <span className="text-chalk">{vehicleLabel(a.vehicle)}</span>
+                <span className="font-mono tabular-nums text-signal">{formatNZD(a.current_bid ?? a.starting_price)}</span>
               </Link>
             ))}
           </section>
         )}
 
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Recent</h2>
+          <h2 className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-fog">Recent</h2>
           {rows.length === 0 && endingSoon.length === 0 && (
-            <p className="text-zinc-500">You have no notifications yet.</p>
+            <p className="text-fog">You have no notifications yet.</p>
           )}
           {rows.map((r: any) => {
             const label = (LABEL[r.type] ?? ((v: string) => v))(vehicleLabel(r.auction.vehicle));
@@ -77,12 +77,12 @@ export default async function NotificationsPage() {
               <Link
                 key={r.id}
                 href={hrefFor(r.type, r.auction_id)}
-                className={`${rowClass} ${isNew ? "border-emerald-700 bg-emerald-950/20" : "border-zinc-800 bg-zinc-900/50"}`}
+                className={`${rowClass} ${isNew ? "border-go/40 bg-go/10" : "border-line bg-panel hover:border-signal/40"}`}
               >
-                <span className="text-white">{label}</span>
+                <span className="text-chalk">{label}</span>
                 <span className="flex items-center gap-3">
-                  {isNew && <span className="text-[10px] uppercase tracking-wide text-emerald-400">New</span>}
-                  <span className="text-xs text-zinc-500">{timeAgo(r.created_at)}</span>
+                  {isNew && <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-go">New</span>}
+                  <span className="font-mono text-xs text-fog">{timeAgo(r.created_at)}</span>
                 </span>
               </Link>
             );

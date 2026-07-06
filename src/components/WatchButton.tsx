@@ -16,8 +16,8 @@ export function WatchButton({ auctionId, watched }: { auctionId: string; watched
         aria-pressed={watched}
         aria-label={watched ? "Unwatch" : "Watch"}
         title={watched ? "Unwatch" : "Watch"}
-        className={`rounded-full bg-zinc-900/80 px-2 py-1 text-base leading-none disabled:opacity-50 ${
-          watched ? "text-red-400" : "text-zinc-300 hover:text-red-300"
+        className={`rounded-full bg-ink/80 px-2 py-1 text-base leading-none backdrop-blur-sm disabled:opacity-50 ${
+          watched ? "text-signal" : "text-fog hover:text-signal"
         }`}
       >
         {watched ? "♥" : "♡"}

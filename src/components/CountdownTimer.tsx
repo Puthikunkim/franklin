@@ -9,15 +9,17 @@ export function CountdownTimer({ endTime }: { endTime: string }) {
     return () => clearInterval(t);
   }, []);
   if (now === null) {
-    return (
-      <span className="font-mono tabular-nums text-neutral-200">--:--</span>
-    );
+    return <span className="font-mono tabular-nums text-fog">--:--</span>;
   }
   const ms = Math.max(0, new Date(endTime).getTime() - now);
   const m = Math.floor(ms / 60000);
   const s = Math.floor((ms % 60000) / 1000);
   return (
-    <span className={`font-mono tabular-nums ${ms < 60000 ? "text-red-400" : "text-neutral-200"}`}>
+    <span
+      className={`font-mono font-semibold tabular-nums ${
+        ms < 60000 ? "text-stop" : "text-signal"
+      }`}
+    >
       {m}:{String(s).padStart(2, "0")}
     </span>
   );

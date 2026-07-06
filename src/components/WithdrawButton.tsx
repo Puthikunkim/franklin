@@ -10,7 +10,7 @@ export function WithdrawButton({ auctionId }: { auctionId: string }) {
   if (!confirming) {
     return (
       <button type="button" onClick={() => setConfirming(true)}
-        className="text-xs text-red-400 hover:text-red-300">
+        className="text-xs font-medium text-stop transition-colors hover:text-stop/80">
         Withdraw
       </button>
     );
@@ -18,14 +18,14 @@ export function WithdrawButton({ auctionId }: { auctionId: string }) {
   return (
     <form action={action} className="flex items-center gap-2">
       <input type="hidden" name="auctionId" value={auctionId} />
-      <span className="text-xs text-zinc-400">Withdraw &amp; cancel? Bidders are notified — can&apos;t be undone.</span>
-      <button type="submit" disabled={pending} className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50">
+      <span className="text-xs text-fog">Withdraw &amp; cancel? Bidders are notified — can&apos;t be undone.</span>
+      <button type="submit" disabled={pending} className="text-xs font-medium text-stop transition-colors hover:text-stop/80 disabled:opacity-50">
         {pending ? "…" : "Yes"}
       </button>
-      <button type="button" onClick={() => setConfirming(false)} className="text-xs text-zinc-400 hover:text-zinc-200">
+      <button type="button" onClick={() => setConfirming(false)} className="text-xs text-fog transition-colors hover:text-chalk">
         No
       </button>
-      {state.error && <span className="text-xs text-red-400">{state.error}</span>}
+      {state.error && <span className="text-xs text-stop">{state.error}</span>}
     </form>
   );
 }

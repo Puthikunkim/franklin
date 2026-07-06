@@ -27,10 +27,21 @@ export default async function Home({
   return (
     <main className="mx-auto max-w-6xl p-6">
       <Header />
-      <h1 className="text-2xl font-semibold mb-6">Live auctions</h1>
+      <div className="mb-6 flex items-end justify-between gap-4">
+        <div>
+          <p className="mb-1 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-fog">
+            <span aria-hidden="true" className="inline-block h-1.5 w-1.5 animate-live rounded-full bg-signal" />
+            Trading floor
+          </p>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-chalk">Live auctions</h1>
+        </div>
+        <p className="font-mono text-sm text-fog">
+          <span className="text-chalk">{auctions.length}</span> {auctions.length === 1 ? "lot" : "lots"} live
+        </p>
+      </div>
       <FilterBar />
       {auctions.length === 0 ? (
-        <p className="text-zinc-400">No auctions match your filters.</p>
+        <p className="text-fog">No auctions match your filters.</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {auctions.map((a) => (

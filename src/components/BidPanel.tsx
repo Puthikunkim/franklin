@@ -232,21 +232,27 @@ export function BidPanel({ auction, currentDealerId, initialBids }: BidPanelProp
 
   const msgColor =
     msgType === "ok"
-      ? "text-emerald-400"
+      ? "text-go"
       : msgType === "err"
-      ? "text-red-400"
-      : "text-zinc-300";
+      ? "text-stop"
+      : "text-fog";
 
   return (
     <div className="space-y-6">
-      {/* Bid Panel */}
-      <div className="rounded-xl border border-zinc-700 bg-zinc-800/50 p-6 space-y-4">
+      {/* Instrument cluster — the live bid readout */}
+      <div className="space-y-4 rounded-xl border border-line bg-panel p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-wide text-zinc-500 mb-1">
+            <p className="mb-1 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-fog">
+              {!ended && (
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-1.5 w-1.5 animate-live rounded-full bg-signal"
+                />
+              )}
               {auction.current_bid ? "Current bid" : "Starting price"}
             </p>
-            <p className="text-4xl font-mono font-bold tabular-nums text-white">
+            <p className="text-4xl font-mono font-bold tabular-nums text-signal">
               {formatNZD(currentBid)}
             </p>
           </div>
@@ -254,26 +260,26 @@ export function BidPanel({ auction, currentDealerId, initialBids }: BidPanelProp
         </div>
 
         {auction.reserve_price > 0 && (
-          <p className="text-xs text-zinc-500">
+          <p className="font-mono text-xs text-fog">
             Reserve:{" "}
-            <span className={currentBid >= auction.reserve_price ? "text-emerald-400" : "text-amber-400"}>
+            <span className={currentBid >= auction.reserve_price ? "text-go" : "text-signal"}>
               {currentBid >= auction.reserve_price ? "Met" : "Not met"}
             </span>
           </p>
         )}
 
         {outbidAlert && (
-          <div className="rounded-lg bg-red-900/40 border border-red-700 px-4 py-3 text-sm text-red-300 font-medium">
+          <div className="rounded-lg border border-stop/50 bg-stop/15 px-4 py-3 text-sm font-medium text-stop">
             You have been outbid!
           </div>
         )}
 
         {ended ? (
           <div className="space-y-3">
-            <p className="text-sm text-zinc-500 font-medium">This auction has ended.</p>
+            <p className="text-sm font-medium text-fog">This auction has ended.</p>
             <Link
               href={`/won/${auction.id}`}
-              className="block w-full rounded-lg border border-zinc-600 bg-zinc-700 hover:bg-zinc-600 px-4 py-3 text-center text-sm font-semibold text-zinc-200 transition-colors"
+              className="block w-full rounded-lg border border-line bg-panel-2 px-4 py-3 text-center text-sm font-semibold text-chalk transition-colors hover:border-signal/40"
             >
               View result →
             </Link>
@@ -281,7 +287,7 @@ export function BidPanel({ auction, currentDealerId, initialBids }: BidPanelProp
         ) : (
           <div className="space-y-3">
             <div className="space-y-1">
-              <label htmlFor="max-bid" className="text-xs text-zinc-400 font-medium">
+              <label htmlFor="max-bid" className="text-xs font-medium text-fog">
                 Your max bid (NZD $)
               </label>
               <input
@@ -292,14 +298,14 @@ export function BidPanel({ auction, currentDealerId, initialBids }: BidPanelProp
                 inputMode="decimal"
                 placeholder="e.g. 12500"
                 disabled={loading}
-                className="w-full rounded-lg bg-zinc-900 border border-zinc-600 px-3 py-2.5 text-white placeholder-zinc-600 focus:border-zinc-400 focus:outline-none disabled:opacity-50"
+                className="w-full rounded-lg border border-line bg-ink px-3 py-2.5 font-mono text-chalk placeholder-fog focus:border-signal focus:outline-none disabled:opacity-50"
               />
             </div>
 
             <button
               onClick={placeBid}
               disabled={loading || !maxInput}
-              className="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 px-4 py-3 font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-lg bg-signal px-4 py-3 font-semibold text-ink transition-colors hover:bg-signal/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? "Placing bid…" : "Place bid"}
             </button>
@@ -311,7 +317,7 @@ export function BidPanel({ auction, currentDealerId, initialBids }: BidPanelProp
 
       {/* Bid History */}
       <div>
-        <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-3">
+        <h3 className="mb-3 font-mono text-xs font-semibold uppercase tracking-[0.14em] text-fog">
           Bid history
         </h3>
         <BidHistory bids={bids} />

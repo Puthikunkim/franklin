@@ -30,20 +30,23 @@ export default async function DashboardPage() {
     getMyWatching(sb, dealerId),
   ]);
 
-  const rowClass = "flex items-center justify-between rounded border border-zinc-800 bg-zinc-900/50 px-4 py-3";
+  // NOTE: the "flex items-center justify-between" classes are load-bearing —
+  // e2e specs locate dashboard rows by `div.flex.items-center.justify-between`.
+  const rowClass = "flex items-center justify-between rounded-lg border border-line bg-panel px-4 py-3 transition-colors";
+  const linkRowClass = `${rowClass} hover:border-signal/40`;
 
   return (
     <>
       <Header />
       <main className="mx-auto max-w-4xl px-6 py-8 space-y-8">
-        <h1 className="text-2xl font-bold text-white">My activity</h1>
+        <h1 className="font-display text-2xl font-bold text-chalk">My activity</h1>
 
         <DashboardSection title="My listings" count={listings.length} empty="You haven't listed any vehicles yet.">
           {listings.map((a: any) => (
             <div key={a.id} className={rowClass}>
-              <Link href={`/auction/${a.id}`} className="text-white hover:underline">{vehicleLabel(a.vehicle)}</Link>
+              <Link href={`/auction/${a.id}`} className="text-chalk transition-colors hover:text-signal">{vehicleLabel(a.vehicle)}</Link>
               <span className="flex items-center gap-3">
-                <span className="text-xs uppercase tracking-wide text-zinc-400">{a.status}</span>
+                <span className="font-mono text-xs uppercase tracking-[0.12em] text-fog">{a.status}</span>
                 {a.status === "draft" && <DiscardDraftButton auctionId={a.id} />}
                 {a.status === "live" && a.current_bid == null && <UnpublishButton auctionId={a.id} />}
                 {a.status === "live" && a.current_bid != null && <WithdrawButton auctionId={a.id} />}
@@ -54,11 +57,11 @@ export default async function DashboardPage() {
 
         <DashboardSection title="Bidding on" count={bidding.length} empty="You're not bidding on anything right now.">
           {bidding.map((a: any) => (
-            <Link key={a.id} href={`/auction/${a.id}`} className={rowClass}>
-              <span className="text-white">{vehicleLabel(a.vehicle)}</span>
+            <Link key={a.id} href={`/auction/${a.id}`} className={linkRowClass}>
+              <span className="text-chalk">{vehicleLabel(a.vehicle)}</span>
               <span className="flex items-center gap-3">
-                <span className="font-mono text-zinc-300">{formatNZD(a.current_bid ?? a.starting_price)}</span>
-                <span className={a.current_winner_dealer_id === dealerId ? "text-emerald-400 text-xs" : "text-red-400 text-xs"}>
+                <span className="font-mono tabular-nums text-fog">{formatNZD(a.current_bid ?? a.starting_price)}</span>
+                <span className={`font-mono text-[10px] font-semibold uppercase tracking-[0.12em] ${a.current_winner_dealer_id === dealerId ? "text-go" : "text-stop"}`}>
                   {a.current_winner_dealer_id === dealerId ? "Winning" : "Outbid"}
                 </span>
               </span>
@@ -68,9 +71,9 @@ export default async function DashboardPage() {
 
         <DashboardSection title="My wins" count={wins.length} empty="No auctions won yet.">
           {wins.map((a: any) => (
-            <Link key={a.id} href={`/won/${a.id}`} className={rowClass}>
-              <span className="text-white">{vehicleLabel(a.vehicle)}</span>
-              <span className="font-mono text-emerald-400">{formatNZD(a.current_bid ?? a.starting_price)}</span>
+            <Link key={a.id} href={`/won/${a.id}`} className={linkRowClass}>
+              <span className="text-chalk">{vehicleLabel(a.vehicle)}</span>
+              <span className="font-mono tabular-nums text-go">{formatNZD(a.current_bid ?? a.starting_price)}</span>
             </Link>
           ))}
         </DashboardSection>
@@ -79,12 +82,12 @@ export default async function DashboardPage() {
           {sales.map((a: any) => {
             const s = Array.isArray(a.settlement) ? a.settlement[0] : a.settlement;
             return (
-              <Link key={a.id} href={`/auction/${a.id}`} className={rowClass}>
-                <span className="text-white">{vehicleLabel(a.vehicle)}</span>
+              <Link key={a.id} href={`/auction/${a.id}`} className={linkRowClass}>
+                <span className="text-chalk">{vehicleLabel(a.vehicle)}</span>
                 <span className="text-sm">
                   {a.status === "sold" && s
-                    ? <span className="font-mono text-emerald-400">{formatNZD(s.sale_price)}</span>
-                    : <span className="text-zinc-500">Passed in</span>}
+                    ? <span className="font-mono tabular-nums text-go">{formatNZD(s.sale_price)}</span>
+                    : <span className="text-fog">Passed in</span>}
                 </span>
               </Link>
             );
@@ -93,9 +96,9 @@ export default async function DashboardPage() {
 
         <DashboardSection title="Watching" count={watching.length} empty="You're not watching any auctions.">
           {watching.map((a: any) => (
-            <Link key={a.id} href={`/auction/${a.id}`} className={rowClass}>
-              <span className="text-white">{vehicleLabel(a.vehicle)}</span>
-              <span className="font-mono text-zinc-300">{formatNZD(a.current_bid ?? a.starting_price)}</span>
+            <Link key={a.id} href={`/auction/${a.id}`} className={linkRowClass}>
+              <span className="text-chalk">{vehicleLabel(a.vehicle)}</span>
+              <span className="font-mono tabular-nums text-fog">{formatNZD(a.current_bid ?? a.starting_price)}</span>
             </Link>
           ))}
         </DashboardSection>

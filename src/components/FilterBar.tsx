@@ -6,7 +6,7 @@ import { REGIONS, SORT_OPTIONS } from "@/lib/discovery";
 
 const GRADES = ["A", "B", "C", "D", "E"];
 const inputClass =
-  "rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-zinc-100";
+  "rounded-md border border-line bg-panel px-2.5 py-1.5 text-sm text-chalk placeholder-fog focus:border-signal focus:outline-none";
 
 export function FilterBar() {
   const router = useRouter();
@@ -78,10 +78,10 @@ export function FilterBar() {
             type="button"
             aria-pressed={grades.includes(g)}
             onClick={() => toggleGrade(g)}
-            className={`rounded px-2 py-1 text-sm ${
+            className={`rounded-md px-2.5 py-1 font-mono text-sm font-semibold transition-colors ${
               grades.includes(g)
-                ? "bg-emerald-600 text-white"
-                : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                ? "bg-signal text-ink"
+                : "border border-line bg-panel text-fog hover:text-chalk"
             }`}
           >
             {g}
@@ -134,7 +134,7 @@ export function FilterBar() {
       <button
         type="button"
         onClick={clearAll}
-        className="text-sm text-zinc-400 hover:text-zinc-200"
+        className="text-sm text-fog transition-colors hover:text-chalk"
       >
         Clear
       </button>

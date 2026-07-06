@@ -7,6 +7,7 @@ import { BidPanel } from "@/components/BidPanel";
 import { PublishPanel } from "@/components/PublishPanel";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { DealerBadge } from "@/components/DealerBadge";
+import { GradeStamp } from "@/components/GradeStamp";
 import { getAuctionById } from "@/lib/auctions";
 import { serverClient } from "@/lib/supabase/server";
 import { getWatchedAuctionIds } from "@/lib/discovery";
@@ -84,19 +85,19 @@ export default async function AuctionDetailPage({
       {/* Back nav */}
       <a
         href="/"
-        className="mb-6 inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+        className="mb-6 inline-flex items-center gap-1 text-sm text-fog transition-colors hover:text-chalk"
       >
         ← Back to auctions
       </a>
 
       {isDraft && (
-        <div className="mb-4 rounded-lg bg-amber-950/40 border border-amber-700 px-4 py-2 text-sm text-amber-300 font-medium">
+        <div className="mb-4 rounded-lg border border-signal/40 bg-signal/10 px-4 py-2 text-sm font-medium text-signal">
           Draft — not yet live
         </div>
       )}
 
       {isCancelled && (
-        <div className="mb-4 rounded-lg bg-red-950/40 border border-red-800 px-4 py-2 text-sm text-red-300 font-medium">
+        <div className="mb-4 rounded-lg border border-stop/40 bg-stop/10 px-4 py-2 text-sm font-medium text-stop">
           This auction was withdrawn by the seller.
         </div>
       )}
@@ -105,7 +106,7 @@ export default async function AuctionDetailPage({
         {/* Left column: vehicle details */}
         <div className="lg:col-span-2 space-y-6">
           {/* Photo */}
-          <div className="relative overflow-hidden rounded-xl bg-zinc-800 h-72 flex items-center justify-center">
+          <div className="relative flex h-72 items-center justify-center overflow-hidden rounded-xl border border-line bg-panel">
             {vehicle.photo_urls?.[0] ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -114,25 +115,25 @@ export default async function AuctionDetailPage({
                 className="h-full w-full object-cover"
               />
             ) : (
-              <span className="text-zinc-500">No photo available</span>
+              <span className="font-mono text-xs uppercase tracking-widest text-fog">No photo available</span>
             )}
-            <span className="absolute top-3 right-3 rounded-full bg-zinc-900/80 px-3 py-1 text-xs font-semibold text-zinc-200">
-              Grade {vehicle.grade}
+            <span className="absolute right-3 top-3">
+              <GradeStamp grade={vehicle.grade} />
             </span>
           </div>
 
           {/* Vehicle title */}
           <div>
             <div className="flex items-start justify-between gap-3">
-              <h1 className="text-2xl font-bold text-white leading-tight">
+              <h1 className="font-display text-2xl font-bold leading-tight text-chalk">
                 {vehicle.year} {vehicle.make} {vehicle.model}
                 {vehicle.variant ? (
-                  <span className="font-normal text-zinc-400"> {vehicle.variant}</span>
+                  <span className="font-normal text-fog"> {vehicle.variant}</span>
                 ) : null}
               </h1>
               {!isDraft && <WatchButton auctionId={auction.id} watched={isWatched} />}
             </div>
-            <p className="mt-1 text-sm text-zinc-400">
+            <p className="mt-1 font-mono text-sm text-fog">
               {vehicle.odometer_km.toLocaleString("en-NZ")} km
               {vehicle.color ? ` · ${vehicle.color}` : ""}
               {vehicle.rego ? ` · ${vehicle.rego}` : ""}
@@ -151,37 +152,41 @@ export default async function AuctionDetailPage({
 
           {/* Countdown — only meaningful for live auctions */}
           {!isDraft && !isCancelled && (
-            <div className="flex items-center gap-2 text-sm text-zinc-400">
-              <span>Time remaining:</span>
+            <div className="flex items-center gap-2 font-mono text-sm text-fog">
+              <span
+                aria-hidden="true"
+                className="inline-block h-1.5 w-1.5 animate-live rounded-full bg-signal"
+              />
+              <span className="uppercase tracking-[0.12em] text-[11px]">Time remaining</span>
               <CountdownTimer endTime={auction.end_time} />
             </div>
           )}
 
           {/* Notes */}
           {vehicle.mechanical_notes && (
-            <div className="rounded-lg bg-zinc-800/60 border border-zinc-700 p-4">
-              <h3 className="text-xs uppercase tracking-wide text-zinc-500 mb-2 font-semibold">
+            <div className="rounded-lg border border-line bg-panel p-4">
+              <h3 className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-fog">
                 Mechanical notes
               </h3>
-              <p className="text-sm text-zinc-300 whitespace-pre-line">{vehicle.mechanical_notes}</p>
+              <p className="whitespace-pre-line text-sm text-chalk">{vehicle.mechanical_notes}</p>
             </div>
           )}
 
           {vehicle.appraisal_notes && (
-            <div className="rounded-lg bg-zinc-800/60 border border-zinc-700 p-4">
-              <h3 className="text-xs uppercase tracking-wide text-zinc-500 mb-2 font-semibold">
+            <div className="rounded-lg border border-line bg-panel p-4">
+              <h3 className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-fog">
                 Appraisal notes
               </h3>
-              <p className="text-sm text-zinc-300 whitespace-pre-line">{vehicle.appraisal_notes}</p>
+              <p className="whitespace-pre-line text-sm text-chalk">{vehicle.appraisal_notes}</p>
             </div>
           )}
 
           {/* Seller */}
           <div>
-            <h3 className="text-xs uppercase tracking-wide text-zinc-500 mb-2 font-semibold">
+            <h3 className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-fog">
               Seller
             </h3>
-            <Link href={`/dealer/${seller.id}`} className="inline-block hover:opacity-80 transition-opacity">
+            <Link href={`/dealer/${seller.id}`} className="inline-block transition-opacity hover:opacity-80">
               <DealerBadge dealer={seller} />
             </Link>
           </div>
@@ -209,9 +214,9 @@ function Stat({
   highlight?: boolean;
 }) {
   return (
-    <div className="rounded-lg bg-zinc-800/60 border border-zinc-700 p-3">
-      <p className="text-[10px] uppercase tracking-wide text-zinc-500 mb-1">{label}</p>
-      <p className={`text-base font-bold ${highlight ? "text-white" : "text-zinc-200"}`}>
+    <div className="rounded-lg border border-line bg-panel p-3">
+      <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.14em] text-fog">{label}</p>
+      <p className={`font-mono text-base font-bold tabular-nums ${highlight ? "text-signal" : "text-chalk"}`}>
         {value}
       </p>
     </div>

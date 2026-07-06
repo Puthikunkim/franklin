@@ -1,26 +1,71 @@
 @import "tailwindcss";
 
+/*
+  "Night lot" — a dealer's after-hours trading terminal.
+  Deep instrument-panel dark, tabular-mono data, a signal-amber live system.
+  Colour semantics borrow from automotive signal lights:
+    signal (amber) = live / act / caution
+    go     (green) = won / sold / verified
+    stop   (red)   = outbid / withdrawn / ending
+*/
+@theme {
+  --color-ink: #0b0d10; /* base — cool near-black instrument panel */
+  --color-panel: #14171c; /* raised surfaces / cards */
+  --color-panel-2: #1b1f26; /* hover / nested surfaces */
+  --color-line: #232830; /* hairline borders */
+  --color-fog: #8a929e; /* muted / secondary text */
+  --color-chalk: #eaedf1; /* primary text */
+  --color-signal: #f5a524; /* live / act / caution */
+  --color-go: #37c871; /* won / sold / verified */
+  --color-stop: #f04d4d; /* outbid / withdrawn / ending */
+
+  --font-sans: var(--ff-body);
+  --font-display: var(--ff-display);
+  --font-mono: var(--ff-mono);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-ink);
+  color: var(--color-chalk);
+  font-family: var(--font-sans);
+}
+
+/* Visible keyboard focus in the live-signal colour. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+::selection {
+  background: var(--color-signal);
+  color: var(--color-ink);
+}
+
+/* The live pulse — a slow indicator blink, stilled for reduced-motion users. */
+@keyframes live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.animate-live {
+  animation: live-pulse 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-live {
+    animation: none;
+  }
 }

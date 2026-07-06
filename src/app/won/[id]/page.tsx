@@ -36,10 +36,10 @@ export default async function WonPage({
   if (closeStatus === "live") {
     return (
       <main className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <p className="text-lg font-semibold text-zinc-300">Auction still in progress.</p>
+        <p className="text-lg font-semibold text-chalk">Auction still in progress.</p>
         <Link
           href={`/auction/${id}`}
-          className="mt-4 inline-block text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+          className="mt-4 inline-block text-sm text-fog transition-colors hover:text-chalk"
         >
           ← Back to auction
         </Link>
@@ -65,22 +65,22 @@ export default async function WonPage({
       <main className="mx-auto max-w-2xl px-4 py-16">
         <Link
           href="/"
-          className="mb-8 inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+          className="mb-8 inline-flex items-center gap-1 text-sm text-fog transition-colors hover:text-chalk"
         >
           ← Back to auctions
         </Link>
 
-        <div className="rounded-xl border border-zinc-700 bg-zinc-800/50 p-8 text-center space-y-4">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-900/40 border border-amber-700">
-            <span className="text-2xl">—</span>
+        <div className="space-y-4 rounded-xl border border-line bg-panel p-8 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-signal/40 bg-signal/10">
+            <span className="text-2xl text-signal">—</span>
           </div>
-          <h1 className="text-2xl font-bold text-white">Reserve not met — passed in</h1>
-          <p className="text-zinc-400">
+          <h1 className="font-display text-2xl font-bold text-chalk">Reserve not met — passed in</h1>
+          <p className="text-fog">
             {vehicle.year} {vehicle.make} {vehicle.model}
             {vehicle.variant ? ` ${vehicle.variant}` : ""}
           </p>
           {auction.current_bid != null && (
-            <p className="text-sm text-zinc-500">
+            <p className="font-mono text-sm text-fog">
               Highest bid: {formatNZD(auction.current_bid)}
             </p>
           )}
@@ -104,17 +104,17 @@ export default async function WonPage({
     <main className="mx-auto max-w-2xl px-4 py-16">
       <Link
         href="/"
-        className="mb-8 inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+        className="mb-8 inline-flex items-center gap-1 text-sm text-fog transition-colors hover:text-chalk"
       >
         ← Back to auctions
       </Link>
 
-      <div className="rounded-xl border border-emerald-700 bg-zinc-800/50 p-8 space-y-6">
+      <div className="space-y-6 rounded-xl border border-go/40 bg-panel p-8">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-900/50 border border-emerald-700">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-go/40 bg-go/15">
             <svg
-              className="h-5 w-5 text-emerald-400"
+              className="h-5 w-5 text-go"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={2}
@@ -124,21 +124,21 @@ export default async function WonPage({
             </svg>
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">Settlement arranged</h1>
-            <p className="text-sm text-emerald-400">Auction sold</p>
+            <h1 className="font-display text-xl font-bold text-chalk">Settlement arranged</h1>
+            <p className="text-sm text-go">Auction sold</p>
           </div>
         </div>
 
         {/* Vehicle */}
-        <div className="border-t border-zinc-700 pt-5">
-          <p className="text-xs uppercase tracking-wide text-zinc-500 mb-1">Vehicle</p>
-          <p className="text-lg font-semibold text-white">
+        <div className="border-t border-line pt-5">
+          <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.14em] text-fog">Vehicle</p>
+          <p className="text-lg font-semibold text-chalk">
             {vehicle.year} {vehicle.make} {vehicle.model}
             {vehicle.variant ? (
-              <span className="font-normal text-zinc-400"> {vehicle.variant}</span>
+              <span className="font-normal text-fog"> {vehicle.variant}</span>
             ) : null}
           </p>
-          <p className="text-sm text-zinc-400 mt-0.5">
+          <p className="mt-0.5 font-mono text-sm text-fog">
             {vehicle.odometer_km.toLocaleString("en-NZ")} km
             {vehicle.color ? ` · ${vehicle.color}` : ""}
             {vehicle.rego ? ` · ${vehicle.rego}` : ""}
@@ -146,31 +146,31 @@ export default async function WonPage({
         </div>
 
         {/* Fee breakdown */}
-        <div className="border-t border-zinc-700 pt-5 space-y-3">
-          <p className="text-xs uppercase tracking-wide text-zinc-500 mb-2">Settlement summary</p>
+        <div className="space-y-3 border-t border-line pt-5">
+          <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-fog">Settlement summary</p>
 
-          <div className="flex justify-between items-baseline">
-            <span className="text-sm text-zinc-300">Sale price</span>
-            <span className="text-xl font-bold text-white font-mono tabular-nums">
+          <div className="flex items-baseline justify-between">
+            <span className="text-sm text-chalk">Sale price</span>
+            <span className="font-mono text-xl font-bold tabular-nums text-go">
               {formatNZD(settlement.sale_price)}
             </span>
           </div>
 
-          <div className="flex justify-between items-baseline text-sm">
-            <span className="text-zinc-400">Seller fee</span>
-            <span className="text-zinc-200">{formatNZD(settlement.seller_fee)}</span>
+          <div className="flex items-baseline justify-between text-sm">
+            <span className="text-fog">Seller fee</span>
+            <span className="font-mono tabular-nums text-chalk">{formatNZD(settlement.seller_fee)}</span>
           </div>
 
-          <div className="flex justify-between items-baseline text-sm">
-            <span className="text-zinc-400">Buyer fee</span>
-            <span className="text-zinc-200">{formatNZD(settlement.buyer_fee)}</span>
+          <div className="flex items-baseline justify-between text-sm">
+            <span className="text-fog">Buyer fee</span>
+            <span className="font-mono tabular-nums text-chalk">{formatNZD(settlement.buyer_fee)}</span>
           </div>
         </div>
 
         {/* Status pill */}
-        <div className="border-t border-zinc-700 pt-5">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-900/40 border border-emerald-700 px-3 py-1 text-xs font-semibold text-emerald-300">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+        <div className="border-t border-line pt-5">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-go/40 bg-go/15 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-go">
+            <span className="h-1.5 w-1.5 rounded-full bg-go" />
             {settlement.status.charAt(0).toUpperCase() + settlement.status.slice(1)}
           </span>
         </div>
