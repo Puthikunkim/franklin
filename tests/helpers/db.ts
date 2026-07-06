@@ -49,16 +49,17 @@ export async function createLiveAuction(dealer: string): Promise<string> {
   return id;
 }
 
-// Delete test-created auctions and everything that FK-references them — bids and
-// settlements first, then the auctions, then their vehicles (none of these FKs
-// cascade) — so reverted-to-draft, leftover-live, or settled fixtures never leak
-// into later shared-DB tests.
+// Delete test-created auctions and everything that FK-references them — bids,
+// settlements, and notifications first, then the auctions, then their vehicles
+// (none of these FKs cascade) — so reverted-to-draft, leftover-live, or settled
+// fixtures never leak into later shared-DB tests.
 export async function deleteAuctions(ids: string[]): Promise<void> {
   if (!ids.length) return;
   const { data: rows } = await admin.from("auctions").select("vehicle_id").in("id", ids);
   const vids = (rows ?? []).map((r: { vehicle_id: string }) => r.vehicle_id);
   await admin.from("bids").delete().in("auction_id", ids);
   await admin.from("settlements").delete().in("auction_id", ids);
+  await admin.from("notifications").delete().in("auction_id", ids);
   await admin.from("auctions").delete().in("id", ids);
   if (vids.length) await admin.from("vehicles").delete().in("id", vids);
 }
