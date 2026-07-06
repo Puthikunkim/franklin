@@ -60,3 +60,11 @@ export async function unpublishListing(dealerId: string, auctionId: string): Pro
   if (error) return { ok: false, reason: "error" };
   return data === "reverted" ? { ok: true } : { ok: false, reason: data as string };
 }
+
+export async function withdrawListing(dealerId: string, auctionId: string): Promise<{ ok: boolean; reason?: string }> {
+  const { data, error } = await serviceClient().rpc("withdraw_listing", {
+    p_auction_id: auctionId, p_dealer_id: dealerId,
+  });
+  if (error) return { ok: false, reason: "error" };
+  return data === "withdrawn" ? { ok: true } : { ok: false, reason: data as string };
+}
