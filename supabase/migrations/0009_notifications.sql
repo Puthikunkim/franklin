@@ -59,6 +59,10 @@ end;
 $$;
 
 -- ── Generation: re-create the writers with notification inserts (additive only) ──────────────
+-- These are now the LIVE definitions of place_bid / close_auction / buy_now_listing and
+-- supersede migrations 0002 / 0003 / 0007. Edit them HERE (or in a later migration) — never
+-- the earlier copies, which no longer run. The bodies are byte-faithful to the originals plus
+-- the perform _notify(...) calls; inline comments were trimmed for length.
 
 -- place_bid: notify the displaced leader when the lead changes hands.
 create or replace function place_bid(
