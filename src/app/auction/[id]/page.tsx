@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getDealerId } from "@/lib/session";
 import { formatNZD } from "@/lib/money";
@@ -173,7 +174,9 @@ export default async function AuctionDetailPage({
             <h3 className="text-xs uppercase tracking-wide text-zinc-500 mb-2 font-semibold">
               Seller
             </h3>
-            <DealerBadge dealer={seller} />
+            <Link href={`/dealer/${seller.id}`} className="inline-block hover:opacity-80 transition-opacity">
+              <DealerBadge dealer={seller} />
+            </Link>
           </div>
         </div>
 
