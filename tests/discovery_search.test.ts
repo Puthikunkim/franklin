@@ -36,7 +36,9 @@ describe("search_live_auctions", () => {
 
   it("text search matches make/model/variant, case-insensitively", async () => {
     const rows = await search({ p_q: "corolla" });
-    expect(rows.map((r) => r.id)).toEqual([A("1")]);
+    // Scope to the seed fixture (a0000000- ids) so a test-created live auction from another
+    // suite that happened to match "corolla" can't break this exact-set assertion.
+    expect(seeded(rows)).toEqual(new Set([A("1")]));
   });
 
   it("grade filter returns only auctions of that grade", async () => {

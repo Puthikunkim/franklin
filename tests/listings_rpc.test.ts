@@ -1,8 +1,19 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { admin, anon, cleanupDrafts } from "./helpers/db";
+import { describe, it, expect, afterEach } from "vitest";
+import { admin, anon, deleteAuctions } from "./helpers/db";
 
 const SELLER = "11111111-1111-1111-1111-111111111111";
 const OTHER = "22222222-2222-2222-2222-222222222222";
+
+// Every auction this file creates is tracked and deleted in afterEach. The publish-to-live
+// test flips a draft to 'live', which the old beforeEach(cleanupDrafts) — drafts only — left
+// behind, leaking one live 'Toyota Hilux' into the shared DB per run. Own-fixture cleanup via
+// deleteAuctions removes drafts AND published-live rows (and their vehicles), so nothing leaks.
+const created: string[] = [];
+function track(id: unknown): string {
+  const s = id as string;
+  if (s) created.push(s);
+  return s;
+}
 
 function draftArgs(overrides: Record<string, unknown> = {}) {
   return {
@@ -18,7 +29,7 @@ function draftArgs(overrides: Record<string, unknown> = {}) {
 }
 
 describe("listing RPCs", () => {
-  beforeEach(cleanupDrafts);
+  afterEach(async () => { await deleteAuctions(created); created.length = 0; });
 
   it("forbids the anon (browser) role from calling the writer RPCs", async () => {
     // The whole security model: only service-role server code may write. The browser
@@ -33,6 +44,7 @@ describe("listing RPCs", () => {
 
   it("creates a draft auction owned by the dealer, hidden from live", async () => {
     const { data: id, error } = await admin.rpc("create_draft_listing", draftArgs());
+    track(id);
     expect(error).toBeNull();
     const { data: a } = await admin.from("auctions").select("*").eq("id", id).single();
     expect(a.status).toBe("draft");
@@ -44,6 +56,7 @@ describe("listing RPCs", () => {
 
   it("rejects update from a non-owner", async () => {
     const { data: id } = await admin.rpc("create_draft_listing", draftArgs());
+    track(id);
     const { data: r } = await admin.rpc("update_draft_listing", {
       p_auction_id: id, p_dealer_id: OTHER, p_make: "Toyota", p_model: "Hilux",
       p_year: 2021, p_variant: "SR5", p_odometer_km: 41000, p_grade: "A",
@@ -57,6 +70,7 @@ describe("listing RPCs", () => {
 
   it("publishes a valid draft to live with a start_time", async () => {
     const { data: id } = await admin.rpc("create_draft_listing", draftArgs());
+    track(id);
     const { data: r } = await admin.rpc("publish_listing", { p_auction_id: id, p_dealer_id: SELLER });
     expect(r).toBe("live");
     const { data: a } = await admin.from("auctions").select("status, start_time").eq("id", id).single();
@@ -68,18 +82,21 @@ describe("listing RPCs", () => {
   it("refuses to publish with an end_time in the past", async () => {
     const { data: id } = await admin.rpc("create_draft_listing",
       draftArgs({ p_end_time: new Date(Date.now() - 3600000).toISOString() }));
+    track(id);
     const { data: r } = await admin.rpc("publish_listing", { p_auction_id: id, p_dealer_id: SELLER });
     expect(r).toBe("end_in_past");
   });
 
   it("refuses to publish with no photos", async () => {
     const { data: id } = await admin.rpc("create_draft_listing", draftArgs({ p_photo_urls: [] }));
+    track(id);
     const { data: r } = await admin.rpc("publish_listing", { p_auction_id: id, p_dealer_id: SELLER });
     expect(r).toBe("no_photos");
   });
 
   it("refuses to publish someone else's draft", async () => {
     const { data: id } = await admin.rpc("create_draft_listing", draftArgs());
+    track(id);
     const { data: r } = await admin.rpc("publish_listing", { p_auction_id: id, p_dealer_id: OTHER });
     expect(r).toBe("not_owner");
   });
@@ -88,6 +105,7 @@ describe("listing RPCs", () => {
     // The publish RPC is the final gate: even if prices are made invalid out-of-band
     // (reserve below starting), publish must reject rather than go live.
     const { data: id } = await admin.rpc("create_draft_listing", draftArgs());
+    track(id);
     await admin.from("auctions").update({ reserve_price: 500000 }).eq("id", id); // < starting 1000000
     const { data: r } = await admin.rpc("publish_listing", { p_auction_id: id, p_dealer_id: SELLER });
     expect(r).toBe("bad_prices");
