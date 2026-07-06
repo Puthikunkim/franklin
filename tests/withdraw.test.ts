@@ -87,4 +87,15 @@ describe("withdraw_listing", () => {
     const bidding = await getMyBiddingAuctions(admin, D2);
     expect(bidding.map((a: { id: string }) => a.id)).not.toContain(id);
   });
+
+  it("never resurfaces as a 'win' after end_time passes, even if the bid met reserve", async () => {
+    const { getMyWins } = await import("../src/lib/dashboard");
+    const id = await makeLive(D1);
+    await bid(id, D2, 1300000);   // D2 leads at the 1,000,000 starting price
+    await bid(id, D3, 1250000);   // proxy holds → price 1,275,000 >= reserve 1,200,000, D2 still winner
+    await withdraw(id, D1);       // cancel while reserve is already met
+    await admin.rpc("test_set_end_in_seconds", { p_auction_id: id, p_seconds: -1 }); // past its end
+    const wins = await getMyWins(admin, D2); // D2 is the leading (would-be winning) bidder
+    expect(wins.map((a: { id: string }) => a.id)).not.toContain(id);
+  });
 });

@@ -34,11 +34,14 @@ export async function getMyBiddingAuctions(sb: SupabaseClient, dealerId: string)
 }
 
 // Auctions the dealer won: current winner, ended, and reserve met (a real sale to them).
+// A withdrawn (cancelled) auction keeps its winner/bid/end_time, so it must be excluded here —
+// otherwise it would resurface as a ghost "win" once its original end_time passes.
 export async function getMyWins(sb: SupabaseClient, dealerId: string) {
   const { data } = await sb
     .from("auctions")
     .select(AUCTION_WITH_VEHICLE)
     .eq("current_winner_dealer_id", dealerId)
+    .neq("status", "cancelled")
     .lte("end_time", new Date().toISOString())
     .order("end_time", { ascending: false });
   return (data ?? []).filter(
