@@ -57,3 +57,142 @@ begin
   where status <> 'draft';
 end;
 $$;
+
+-- ── Generation: re-create the writers with notification inserts (additive only) ──────────────
+
+-- place_bid: notify the displaced leader when the lead changes hands.
+create or replace function place_bid(
+  p_auction_id  uuid,
+  p_dealer_id   uuid,
+  p_max_amount  int
+)
+returns table (
+  status                    text,
+  reason                    text,
+  current_bid               int,
+  current_winner_dealer_id  uuid,
+  end_time                  timestamptz
+)
+language plpgsql security definer
+set search_path = public as $$
+declare
+  a             auctions%rowtype;
+  v_min         int;
+  v_leader_max  int;
+  v_new_price   int;
+  v_new_winner  uuid;
+begin
+  select * into a from auctions where id = p_auction_id for update;
+
+  if a.status <> 'live' or a.end_time <= now() then
+    return query select 'rejected'::text, 'auction_ended'::text,
+      a.current_bid, a.current_winner_dealer_id, a.end_time;
+    return;
+  end if;
+
+  if a.current_bid is null then
+    v_min := a.starting_price;
+  else
+    v_min := a.current_bid + a.bid_increment;
+  end if;
+
+  if p_max_amount < v_min then
+    return query select 'rejected'::text, 'below_minimum'::text,
+      a.current_bid, a.current_winner_dealer_id, a.end_time;
+    return;
+  end if;
+
+  select max(max_amount) into v_leader_max
+    from bids
+   where auction_id = p_auction_id
+     and bidder_dealer_id = a.current_winner_dealer_id;
+
+  if a.current_winner_dealer_id is null then
+    v_new_price  := a.starting_price;
+    v_new_winner := p_dealer_id;
+
+  elsif p_dealer_id = a.current_winner_dealer_id then
+    v_new_price  := a.current_bid;
+    v_new_winner := p_dealer_id;
+
+  elsif p_max_amount > coalesce(v_leader_max, a.current_bid) then
+    v_new_price  := least(coalesce(v_leader_max, a.current_bid) + a.bid_increment, p_max_amount);
+    v_new_winner := p_dealer_id;
+    -- The previous leader just lost the lead: notify them they were outbid.
+    perform _notify(a.current_winner_dealer_id, 'outbid', p_auction_id);
+
+  else
+    v_new_price  := least(p_max_amount + a.bid_increment, v_leader_max);
+    v_new_winner := a.current_winner_dealer_id;
+  end if;
+
+  insert into bids (auction_id, bidder_dealer_id, amount, max_amount)
+    values (p_auction_id, p_dealer_id, v_new_price, p_max_amount);
+
+  if a.end_time - now() <= make_interval(secs => a.anti_snipe_seconds) then
+    a.end_time := a.end_time + make_interval(secs => a.anti_snipe_seconds);
+  end if;
+
+  update auctions
+     set current_bid              = v_new_price,
+         current_winner_dealer_id = v_new_winner,
+         end_time                 = a.end_time
+   where id = p_auction_id;
+
+  return query select 'accepted'::text, null::text, v_new_price, v_new_winner, a.end_time;
+end;
+$$;
+
+-- close_auction: notify the winner (won) and the seller (sold) on a reserve-met close.
+create or replace function close_auction(p_auction_id uuid)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  a auctions%rowtype;
+begin
+  select * into a from auctions where id = p_auction_id for update;
+  if a.status <> 'live' then return a.status; end if;
+  if a.end_time > now() then return 'live'; end if;
+  if a.current_bid is not null and a.current_bid >= a.reserve_price then
+    update auctions set status = 'sold' where id = p_auction_id;
+    insert into settlements (auction_id, sale_price)
+      values (p_auction_id, a.current_bid)
+      on conflict (auction_id) do nothing;
+    perform _notify(a.current_winner_dealer_id, 'won', p_auction_id);
+    perform _notify(a.seller_dealer_id, 'sold', p_auction_id);
+    return 'sold';
+  else
+    update auctions set status = 'passed' where id = p_auction_id;
+    return 'passed';
+  end if;
+end;
+$$;
+
+-- buy_now_listing: notify the seller (sold). The buyer is the actor (redirected to /won).
+create or replace function buy_now_listing(p_auction_id uuid, p_buyer_dealer_id uuid)
+returns text language plpgsql security definer set search_path = public as $$
+declare a auctions%rowtype;
+begin
+  select * into a from auctions where id = p_auction_id for update;
+  if not found then return 'not_found'; end if;
+  if a.status <> 'live' then return a.status; end if;
+  if a.buy_now_price is null then return 'no_buy_now'; end if;
+  if a.current_bid is not null then return 'has_bids'; end if;
+  if a.seller_dealer_id = p_buyer_dealer_id then return 'is_seller'; end if;
+
+  update auctions
+     set status = 'sold',
+         current_bid = a.buy_now_price,
+         current_winner_dealer_id = p_buyer_dealer_id,
+         end_time = now()
+   where id = p_auction_id;
+
+  insert into settlements (auction_id, sale_price)
+     values (p_auction_id, a.buy_now_price)
+     on conflict (auction_id) do nothing;
+  perform _notify(a.seller_dealer_id, 'sold', p_auction_id);
+  return 'bought';
+end; $$;
