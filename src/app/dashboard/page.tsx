@@ -9,6 +9,7 @@ import { DiscardDraftButton } from "@/components/DiscardDraftButton";
 import { UnpublishButton } from "@/components/UnpublishButton";
 import { getMyListings, getMyBiddingAuctions, getMyWins, getMySales } from "@/lib/dashboard";
 import { getMyWatching } from "@/lib/discovery";
+import { closeExpiredAuctions } from "@/lib/auctions";
 
 function vehicleLabel(v: { year: number; make: string; model: string }) {
   return `${v.year} ${v.make} ${v.model}`;
@@ -19,6 +20,7 @@ export default async function DashboardPage() {
   if (!dealerId) redirect("/login");
 
   const sb = await serverClient();
+  await closeExpiredAuctions(sb); // resolve expired auctions so My sales / My wins are current
   const [listings, bidding, wins, sales, watching] = await Promise.all([
     getMyListings(sb, dealerId),
     getMyBiddingAuctions(sb, dealerId),

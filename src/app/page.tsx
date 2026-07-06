@@ -2,6 +2,7 @@ import { getDealerId } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { serverClient } from "@/lib/supabase/server";
 import { searchLiveAuctions, parseFilters, getWatchedAuctionIds } from "@/lib/discovery";
+import { closeExpiredAuctions } from "@/lib/auctions";
 import { AuctionCard } from "@/components/AuctionCard";
 import { FilterBar } from "@/components/FilterBar";
 import { Header } from "@/components/Header";
@@ -16,6 +17,7 @@ export default async function Home({
 
   const filters = parseFilters(await searchParams);
   const sb = await serverClient();
+  await closeExpiredAuctions(sb); // resolve any expired auctions before querying the grid
   const [auctions, watchedIds] = await Promise.all([
     searchLiveAuctions(sb, filters),
     getWatchedAuctionIds(sb, dealerId),
