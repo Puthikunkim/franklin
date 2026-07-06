@@ -25,3 +25,8 @@ export interface Settlement {
   id: string; auction_id: string; sale_price: number;
   seller_fee: number; buyer_fee: number; status: string;
 }
+export type NotificationType = "outbid" | "won" | "sold";
+export interface Notification {
+  id: string; recipient_dealer_id: string; type: NotificationType;
+  auction_id: string; created_at: string; read_at: string | null;
+}
