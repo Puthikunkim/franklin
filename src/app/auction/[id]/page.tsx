@@ -31,6 +31,7 @@ export default async function AuctionDetailPage({
   if (!auction) notFound();
 
   const isDraft = auction.status === "draft";
+  const isCancelled = auction.status === "cancelled";
 
   // Drafts are private: only the owner may view them
   if (isDraft && auction.seller_dealer_id !== currentDealerId) notFound();
@@ -60,7 +61,7 @@ export default async function AuctionDetailPage({
   // Right-hand panel: PublishPanel for owner's draft, BidPanel otherwise
   const rightPanel = isDraft ? (
     <PublishPanel auctionId={auction.id} />
-  ) : (
+  ) : isCancelled ? null : (
     <BidPanel
       auction={auction}
       currentDealerId={currentDealerId}
@@ -91,6 +92,12 @@ export default async function AuctionDetailPage({
       {isDraft && (
         <div className="mb-4 rounded-lg bg-amber-950/40 border border-amber-700 px-4 py-2 text-sm text-amber-300 font-medium">
           Draft — not yet live
+        </div>
+      )}
+
+      {isCancelled && (
+        <div className="mb-4 rounded-lg bg-red-950/40 border border-red-800 px-4 py-2 text-sm text-red-300 font-medium">
+          This auction was withdrawn by the seller.
         </div>
       )}
 
@@ -143,7 +150,7 @@ export default async function AuctionDetailPage({
           </div>
 
           {/* Countdown — only meaningful for live auctions */}
-          {!isDraft && (
+          {!isDraft && !isCancelled && (
             <div className="flex items-center gap-2 text-sm text-zinc-400">
               <span>Time remaining:</span>
               <CountdownTimer endTime={auction.end_time} />

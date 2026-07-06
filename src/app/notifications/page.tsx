@@ -14,6 +14,7 @@ const LABEL: Record<string, (v: string) => string> = {
   outbid: (v) => `You were outbid on ${v}`,
   won: (v) => `You won ${v}`,
   sold: (v) => `Your ${v} sold`,
+  withdrawn: (v) => `An auction you bid on was withdrawn — ${v}`,
 };
 
 function hrefFor(type: string, auctionId: string): string {
