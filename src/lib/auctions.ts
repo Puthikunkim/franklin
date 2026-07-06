@@ -13,6 +13,10 @@ export async function getAuctionById(id: string) {
 // close_expired_auctions() sweep). Called at the top of the home/dashboard renders so
 // wins/sales/settlements/notifications materialize without a /won visit. Returns the count.
 export async function closeExpiredAuctions(sb: SupabaseClient): Promise<number> {
-  const { data } = await sb.rpc("close_expired_auctions");
+  const { data, error } = await sb.rpc("close_expired_auctions");
+  // Surface a systematic sweep failure: a silent no-op here means expired auctions
+  // never resolve (no settlement / won-sold notifications) — the exact bug this fixes.
+  // The defensive end_time filter still keeps them off the grid regardless.
+  if (error) console.error("close_expired_auctions failed:", error.message);
   return (data as number) ?? 0;
 }
