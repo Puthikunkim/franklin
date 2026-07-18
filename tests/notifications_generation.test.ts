@@ -83,5 +83,6 @@ describe("notification generation in the writer RPCs", () => {
     expect((await notifs(D3, "sold")).length).toBe(1); // seller
     expect((await notifs(D1, "sold")).length).toBe(0); // buyer: no 'sold' row (already redirected to /won)
     expect((await notifs(D1, "rate")).length).toBe(1); // buyer: prompted to rate the deal (Slice 12)
+    expect((await notifs(D1)).length).toBe(1); // and NOTHING else — the rate prompt is the buyer's only notification
   });
 });
