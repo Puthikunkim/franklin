@@ -25,8 +25,26 @@ export interface Settlement {
   id: string; auction_id: string; sale_price: number;
   seller_fee: number; buyer_fee: number; status: string;
 }
-export type NotificationType = "outbid" | "won" | "sold";
+export type NotificationType = "outbid" | "won" | "sold" | "withdrawn" | "rate";
 export interface Notification {
   id: string; recipient_dealer_id: string; type: NotificationType;
   auction_id: string; created_at: string; read_at: string | null;
+}
+export interface Rating {
+  id: string; auction_id: string; rater_dealer_id: string; ratee_dealer_id: string;
+  direction: "seller" | "buyer"; score: number; comment: string | null; created_at: string;
+}
+export interface DealerReputation {
+  dealer_id: string;
+  seller_avg: number | null; seller_count: number;
+  buyer_avg: number | null; buyer_count: number;
+}
+export interface DealerReview {
+  direction: "seller" | "buyer"; score: number; comment: string | null; created_at: string;
+}
+export interface RatingState {
+  eligible: boolean; window_open: boolean; already_rated: boolean;
+  counterpart_submitted: boolean; revealed: boolean;
+  my_score: number | null; my_comment: string | null;
+  counterpart_score: number | null; counterpart_comment: string | null;
 }

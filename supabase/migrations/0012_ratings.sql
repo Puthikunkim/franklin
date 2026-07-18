@@ -141,3 +141,83 @@ begin
   perform _notify(a.seller_dealer_id, 'rate', p_auction_id);
   return 'bought';
 end; $$;
+
+-- ── Readers (blind-safe, derive on read). security definer so they can read the
+-- ── service-role-only ratings table; granted to anon/authenticated for page use. ──
+
+-- Per-dealer seller/buyer averages over VISIBLE ratings; one row per requested id.
+create or replace function get_dealers_reputation(p_dealer_ids uuid[])
+returns table (dealer_id uuid, seller_avg numeric, seller_count int, buyer_avg numeric, buyer_count int)
+language sql security definer set search_path = public as $$
+  with visible as (
+    select r.*
+    from ratings r
+    join settlements s on s.auction_id = r.auction_id
+    where (select count(*) from ratings r2 where r2.auction_id = r.auction_id) = 2
+       or s.created_at + interval '14 days' <= now()
+  )
+  select d.id,
+    round(avg(v.score) filter (where v.direction = 'seller'), 1),
+    count(*) filter (where v.direction = 'seller')::int,
+    round(avg(v.score) filter (where v.direction = 'buyer'), 1),
+    count(*) filter (where v.direction = 'buyer')::int
+  from unnest(p_dealer_ids) as d(id)
+  left join visible v on v.ratee_dealer_id = d.id
+  group by d.id;
+$$;
+
+-- Visible reviews about a dealer, newest first.
+create or replace function get_dealer_reviews(p_dealer_id uuid)
+returns table (direction text, score int, comment text, created_at timestamptz)
+language sql security definer set search_path = public as $$
+  select r.direction, r.score, r.comment, r.created_at
+  from ratings r
+  join settlements s on s.auction_id = r.auction_id
+  where r.ratee_dealer_id = p_dealer_id
+    and ((select count(*) from ratings r2 where r2.auction_id = r.auction_id) = 2
+         or s.created_at + interval '14 days' <= now())
+  order by r.created_at desc;
+$$;
+
+-- Everything the rate panel needs for one viewer on one auction.
+create or replace function get_rating_state(p_auction_id uuid, p_viewer_dealer_id uuid)
+returns table (
+  eligible boolean, window_open boolean, already_rated boolean,
+  counterpart_submitted boolean, revealed boolean,
+  my_score int, my_comment text, counterpart_score int, counterpart_comment text
+) language plpgsql security definer set search_path = public as $$
+declare
+  a auctions%rowtype; s settlements%rowtype;
+  v_mine ratings%rowtype; v_theirs ratings%rowtype;
+  v_count int; v_revealed boolean;
+begin
+  select * into a from auctions where id = p_auction_id;
+  if not found or a.status <> 'sold' or a.seller_dealer_id = a.current_winner_dealer_id
+     or p_viewer_dealer_id not in (a.seller_dealer_id, a.current_winner_dealer_id) then
+    return query select false, false, false, false, false,
+      null::int, null::text, null::int, null::text;
+    return;
+  end if;
+
+  select * into s from settlements where auction_id = p_auction_id;
+  select count(*) into v_count from ratings where auction_id = p_auction_id;
+  select * into v_mine from ratings
+    where auction_id = p_auction_id and rater_dealer_id = p_viewer_dealer_id;
+  select * into v_theirs from ratings
+    where auction_id = p_auction_id and rater_dealer_id <> p_viewer_dealer_id limit 1;
+  v_revealed := (v_count = 2) or (s.created_at + interval '14 days' <= now());
+
+  return query select
+    true,
+    (s.created_at + interval '14 days' > now()),
+    (v_mine.id is not null),
+    (v_theirs.id is not null),
+    v_revealed,
+    v_mine.score, v_mine.comment,
+    case when v_revealed then v_theirs.score else null end,
+    case when v_revealed then v_theirs.comment else null end;
+end; $$;
+
+grant execute on function get_dealers_reputation(uuid[]) to anon, authenticated, service_role;
+grant execute on function get_dealer_reviews(uuid) to anon, authenticated, service_role;
+grant execute on function get_rating_state(uuid, uuid) to anon, authenticated, service_role;

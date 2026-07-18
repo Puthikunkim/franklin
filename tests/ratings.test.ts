@@ -100,3 +100,67 @@ describe("rate-your-deal notifications", () => {
     expect(recips).toEqual([D1, D3].sort());
   });
 });
+
+const D4 = "44444444-4444-4444-4444-444444444444"; // never rated
+
+describe("blind-reveal visibility", () => {
+  beforeEach(resetDb);
+  afterEach(async () => { await deleteAuctions(created); created.length = 0; });
+
+  async function repOf(dealer: string) {
+    const { data } = await admin.rpc("get_dealers_reputation", { p_dealer_ids: [dealer] });
+    return (data as any[])[0];
+  }
+  async function stateFor(auction: string, viewer: string) {
+    const { data } = await admin.rpc("get_rating_state", { p_auction_id: auction, p_viewer_dealer_id: viewer });
+    return (data as any[])[0];
+  }
+
+  it("hides a lone rating from the counterparty and from the aggregate until reveal", async () => {
+    const id = await makeSold();
+    await submit(id, D1, 5); // buyer rates seller D3; only one rating so far
+    const sellerRep = await repOf(D3);
+    expect(sellerRep.seller_count).toBe(0);        // not visible yet
+    const stateForSeller = await stateFor(id, D3);
+    expect(stateForSeller.counterpart_submitted).toBe(true);
+    expect(stateForSeller.revealed).toBe(false);
+    expect(stateForSeller.counterpart_score).toBeNull(); // blind
+  });
+
+  it("reveals both ratings once both parties have submitted", async () => {
+    const id = await makeSold();
+    await submit(id, D1, 5);
+    await submit(id, D3, 4);
+    const sellerRep = await repOf(D3);
+    const buyerRep = await repOf(D1);
+    expect(sellerRep.seller_count).toBe(1);
+    expect(Number(sellerRep.seller_avg)).toBe(5);
+    expect(buyerRep.buyer_count).toBe(1);
+    expect(Number(buyerRep.buyer_avg)).toBe(4);
+    const state = await stateFor(id, D1);
+    expect(state.revealed).toBe(true);
+    expect(state.counterpart_score).toBe(4);
+  });
+
+  it("reveals a lone rating once the 14-day window elapses", async () => {
+    const id = await makeSold();
+    await submit(id, D1, 3);
+    await admin.rpc("test_set_settlement_age", { p_auction_id: id, p_seconds: 15 * 86400 });
+    const sellerRep = await repOf(D3);
+    expect(sellerRep.seller_count).toBe(1);
+    expect(Number(sellerRep.seller_avg)).toBe(3);
+  });
+
+  it("returns a zero-filled row for a dealer with no visible ratings", async () => {
+    const rep = await repOf(D4);
+    expect(rep.dealer_id).toBe(D4);
+    expect(rep.seller_count).toBe(0);
+    expect(rep.seller_avg).toBeNull();
+  });
+
+  it("marks a non-party viewer ineligible", async () => {
+    const id = await makeSold();
+    const state = await stateFor(id, D4);
+    expect(state.eligible).toBe(false);
+  });
+});
