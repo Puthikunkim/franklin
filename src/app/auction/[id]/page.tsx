@@ -14,6 +14,8 @@ import { getWatchedAuctionIds } from "@/lib/discovery";
 import { WatchButton } from "@/components/WatchButton";
 import { Header } from "@/components/Header";
 import { BuyNowButton } from "@/components/BuyNowButton";
+import { RateDealPanel } from "@/components/RateDealPanel";
+import { getRatingState } from "@/lib/ratings";
 
 type BidRow = Bid & { dealer: Pick<Dealer, "business_name"> | null };
 
@@ -58,6 +60,11 @@ export default async function AuctionDetailPage({
 
   const { vehicle, seller } = auction;
   const displayPrice = auction.current_bid ?? auction.starting_price;
+
+  // Rating is offered only on a completed sale, to the buyer or the seller.
+  const sbRating = await serverClient();
+  const ratingState =
+    auction.status === "sold" ? await getRatingState(sbRating, id, currentDealerId) : null;
 
   // Right-hand panel: PublishPanel for owner's draft, BidPanel otherwise
   const rightPanel = isDraft ? (
@@ -196,6 +203,9 @@ export default async function AuctionDetailPage({
         <div className="lg:col-span-1 space-y-4">
           {canBuyNow && (
             <BuyNowButton auctionId={auction.id} buyNowPrice={auction.buy_now_price!} />
+          )}
+          {ratingState?.eligible && (
+            <RateDealPanel auctionId={auction.id} state={ratingState} />
           )}
           {rightPanel}
         </div>
