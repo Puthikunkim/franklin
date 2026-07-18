@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Auction, Vehicle, Dealer } from "@/types/db";
+import { Auction, Vehicle, Dealer, DealerReputation } from "@/types/db";
 import { formatNZD } from "@/lib/money";
 import { CountdownTimer } from "./CountdownTimer";
 import { DealerBadge } from "./DealerBadge";
@@ -14,9 +14,11 @@ type AuctionWithJoins = Auction & {
 export function AuctionCard({
   auction,
   watched = false,
+  sellerReputation = null,
 }: {
   auction: AuctionWithJoins;
   watched?: boolean;
+  sellerReputation?: DealerReputation | null;
 }) {
   const { vehicle, seller } = auction;
   const displayPrice = auction.current_bid ?? auction.starting_price;
@@ -83,7 +85,7 @@ export function AuctionCard({
             </span>
           </div>
 
-          <DealerBadge dealer={seller} />
+          <DealerBadge dealer={seller} reputation={sellerReputation} />
         </div>
       </Link>
     </div>

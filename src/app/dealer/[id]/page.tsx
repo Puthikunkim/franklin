@@ -98,6 +98,7 @@ export default async function DealerProfilePage({ params }: { params: Promise<{ 
                   key={a.id}
                   auction={a as Parameters<typeof AuctionCard>[0]["auction"]}
                   watched={watched.has(a.id)}
+                  sellerReputation={rep ?? null}
                 />
               ))}
             </div>

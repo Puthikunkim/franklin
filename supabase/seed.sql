@@ -161,3 +161,42 @@ select 'a0000000-0000-0000-0000-0000000000d1', v.id,
   null, now() + interval '3 days', 'draft',
   1500000, 1750000, 2100000
 from v;
+
+-- ── Slice 12 rating fixtures (SOLD, so they never appear in the live grid) ───────
+-- b01: dedicated e2e deal — sold to D1 by D2, settlement fresh, NOT yet rated.
+with v as (
+  insert into vehicles (id, make, model, year, variant, odometer_km, grade, color, mechanical_notes, appraisal_notes, photo_urls)
+  values ('bbbbbbb1-0000-0000-0000-000000000001','Toyota','Aqua',2019,'S',61000,'B','White',
+    'Recent WOF. Hybrid battery healthy.','Clean city runabout.',
+    array['https://media.example-r2.dev/aqua-1.jpg'])
+  returning id
+)
+insert into auctions (id, vehicle_id, seller_dealer_id, start_time, end_time, status,
+  starting_price, reserve_price, buy_now_price, current_bid, current_winner_dealer_id)
+select 'b0000000-0000-0000-0000-000000000b01', v.id,
+  '22222222-2222-2222-2222-222222222222', now() - interval '1 hour', now(), 'sold',
+  600000, 700000, 900000, 780000, '11111111-1111-1111-1111-111111111111'
+from v;
+insert into settlements (auction_id, sale_price) values
+  ('b0000000-0000-0000-0000-000000000b01', 780000);
+
+-- b02: demo deal — sold and already rated by BOTH sides, so profiles are not empty.
+with v as (
+  insert into vehicles (id, make, model, year, variant, odometer_km, grade, color, mechanical_notes, appraisal_notes, photo_urls)
+  values ('bbbbbbb2-0000-0000-0000-000000000002','Mazda','Axela',2018,'SP25',72000,'B','Grey',
+    'Tidy. New front tyres.','Well kept trade-in.',
+    array['https://media.example-r2.dev/axela-1.jpg'])
+  returning id
+)
+insert into auctions (id, vehicle_id, seller_dealer_id, start_time, end_time, status,
+  starting_price, reserve_price, buy_now_price, current_bid, current_winner_dealer_id)
+select 'b0000000-0000-0000-0000-000000000b02', v.id,
+  '55555555-5555-5555-5555-555555555555', now() - interval '2 hours', now() - interval '1 hour', 'sold',
+  700000, 800000, 1000000, 880000, '33333333-3333-3333-3333-333333333333'
+from v;
+insert into settlements (auction_id, sale_price) values
+  ('b0000000-0000-0000-0000-000000000b02', 880000);
+-- Both parties rated → both rows visible (count = 2). Buyer D3 rates seller D5; seller D5 rates buyer D3.
+insert into ratings (auction_id, rater_dealer_id, ratee_dealer_id, direction, score, comment) values
+  ('b0000000-0000-0000-0000-000000000b02','33333333-3333-3333-3333-333333333333','55555555-5555-5555-5555-555555555555','seller',5,'Car matched the listing exactly.'),
+  ('b0000000-0000-0000-0000-000000000b02','55555555-5555-5555-5555-555555555555','33333333-3333-3333-3333-333333333333','buyer',5,'Paid promptly, easy pickup.');

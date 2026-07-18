@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { serverClient } from "@/lib/supabase/server";
 import { searchLiveAuctions, parseFilters, getWatchedAuctionIds } from "@/lib/discovery";
 import { closeExpiredAuctions } from "@/lib/auctions";
+import { getDealersReputation } from "@/lib/ratings";
 import { AuctionCard } from "@/components/AuctionCard";
 import { FilterBar } from "@/components/FilterBar";
 import { Header } from "@/components/Header";
@@ -23,6 +24,9 @@ export default async function Home({
     getWatchedAuctionIds(sb, dealerId),
   ]);
   const watched = new Set(watchedIds);
+  const sellerIds = [...new Set(auctions.map((a) => (a as { seller_dealer_id: string }).seller_dealer_id))];
+  const reps = await getDealersReputation(sb, sellerIds);
+  const repBySeller = new Map(reps.map((r) => [r.dealer_id, r]));
 
   return (
     <main className="mx-auto max-w-6xl p-6">
@@ -49,6 +53,7 @@ export default async function Home({
               key={a.id}
               auction={a as Parameters<typeof AuctionCard>[0]["auction"]}
               watched={watched.has(a.id)}
+              sellerReputation={repBySeller.get((a as { seller_dealer_id: string }).seller_dealer_id) ?? null}
             />
           ))}
         </div>
