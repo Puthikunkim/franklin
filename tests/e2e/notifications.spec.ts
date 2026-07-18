@@ -3,8 +3,10 @@ import { test, expect, type Page } from "@playwright/test";
 // Two-dealer outbid on the SPARE seeded Nissan Leaf (a05, seller = BayCity / dealer 5). No
 // other e2e spec touches a05, and globalSetup resets the DB only once. Dealer 1 (Auckland)
 // takes the lead, dealer 2 (Waikato) outbids → dealer 1 gets a stored 'outbid' notification.
-// Before this spec runs, dealer 1 has zero notifications (bidding uses a01, buy-now's sold
-// goes to a03's seller D3, discovery/dashboard create none), so the badge is deterministically 1.
+// Before this spec runs, dealer 1 may already carry a leftover unread 'rate' notification
+// (buy-now.spec.ts buys auction a03 as dealer 1, which emits a 'rate' notification to the
+// buyer as well as the seller). This test clears dealer 1's notifications first by visiting
+// /notifications, so the subsequent outbid yields a deterministic single unread.
 const LEAF = "/auction/a0000000-0000-0000-0000-000000000a05";
 
 async function loginAs(page: Page, dealerName: RegExp) {
@@ -21,8 +23,15 @@ async function placeBid(page: Page, dollars: string) {
 }
 
 test("an outbid dealer is notified, and viewing notifications clears the badge", async ({ page }) => {
-  // Dealer 1 leads (max $15,000; opens at the $14,000 starting price).
+  // Dealer 1 logs in first. Before bidding, clear any pre-existing (correct) notifications —
+  // e.g. buy-now.spec.ts buys a03 as dealer 1, which leaves a leftover unread 'rate'
+  // notification. Viewing /notifications marks everything read, so the outbid below produces
+  // a deterministic single unread badge.
   await loginAs(page, /Auckland Motor Wholesale/);
+  await page.goto("/notifications");
+  await expect(page).toHaveURL("/notifications", { timeout: 20000 });
+
+  // Dealer 1 leads (max $15,000; opens at the $14,000 starting price).
   await placeBid(page, "15000");
 
   // Dealer 2 outbids with a higher max, displacing dealer 1.

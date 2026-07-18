@@ -15,7 +15,7 @@ import { WatchButton } from "@/components/WatchButton";
 import { Header } from "@/components/Header";
 import { BuyNowButton } from "@/components/BuyNowButton";
 import { RateDealPanel } from "@/components/RateDealPanel";
-import { getRatingState } from "@/lib/ratings";
+import { getDealersReputation, getRatingState } from "@/lib/ratings";
 
 type BidRow = Bid & { dealer: Pick<Dealer, "business_name"> | null };
 
@@ -65,6 +65,10 @@ export default async function AuctionDetailPage({
   const sbRating = await serverClient();
   const ratingState =
     auction.status === "sold" ? await getRatingState(sbRating, id, currentDealerId) : null;
+
+  // Seller's reputation badge — every auction has a seller, so fetch unconditionally.
+  const sbSellerRep = await serverClient();
+  const [sellerReputation] = await getDealersReputation(sbSellerRep, [seller.id]);
 
   // Right-hand panel: PublishPanel for owner's draft, BidPanel otherwise
   const rightPanel = isDraft ? (
@@ -194,7 +198,7 @@ export default async function AuctionDetailPage({
               Seller
             </h3>
             <Link href={`/dealer/${seller.id}`} className="inline-block transition-opacity hover:opacity-80">
-              <DealerBadge dealer={seller} />
+              <DealerBadge dealer={seller} reputation={sellerReputation} />
             </Link>
           </div>
         </div>
