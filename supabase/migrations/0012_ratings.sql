@@ -84,3 +84,60 @@ begin
   where status <> 'draft';
 end;
 $$;
+
+-- ── 'rate' notification type + emit it at settlement from both writers ──
+alter table notifications drop constraint if exists notifications_type_check;
+alter table notifications add constraint notifications_type_check
+  check (type in ('outbid','won','sold','withdrawn','rate'));
+
+-- close_auction: keep the 0009 body; add a 'rate' prompt to winner and seller on a sale.
+create or replace function close_auction(p_auction_id uuid)
+returns text language plpgsql security definer set search_path = public as $$
+declare a auctions%rowtype;
+begin
+  select * into a from auctions where id = p_auction_id for update;
+  if a.status <> 'live' then return a.status; end if;
+  if a.end_time > now() then return 'live'; end if;
+  if a.current_bid is not null and a.current_bid >= a.reserve_price then
+    update auctions set status = 'sold' where id = p_auction_id;
+    insert into settlements (auction_id, sale_price)
+      values (p_auction_id, a.current_bid)
+      on conflict (auction_id) do nothing;
+    perform _notify(a.current_winner_dealer_id, 'won', p_auction_id);
+    perform _notify(a.seller_dealer_id, 'sold', p_auction_id);
+    perform _notify(a.current_winner_dealer_id, 'rate', p_auction_id);
+    perform _notify(a.seller_dealer_id, 'rate', p_auction_id);
+    return 'sold';
+  else
+    update auctions set status = 'passed' where id = p_auction_id;
+    return 'passed';
+  end if;
+end; $$;
+
+-- buy_now_listing: keep the 0009 body; add a 'rate' prompt to buyer and seller.
+create or replace function buy_now_listing(p_auction_id uuid, p_buyer_dealer_id uuid)
+returns text language plpgsql security definer set search_path = public as $$
+declare a auctions%rowtype;
+begin
+  select * into a from auctions where id = p_auction_id for update;
+  if not found then return 'not_found'; end if;
+  if a.status <> 'live' then return a.status; end if;
+  if a.buy_now_price is null then return 'no_buy_now'; end if;
+  if a.current_bid is not null then return 'has_bids'; end if;
+  if a.seller_dealer_id = p_buyer_dealer_id then return 'is_seller'; end if;
+
+  update auctions
+     set status = 'sold',
+         current_bid = a.buy_now_price,
+         current_winner_dealer_id = p_buyer_dealer_id,
+         end_time = now()
+   where id = p_auction_id;
+
+  insert into settlements (auction_id, sale_price)
+     values (p_auction_id, a.buy_now_price)
+     on conflict (auction_id) do nothing;
+  perform _notify(a.seller_dealer_id, 'sold', p_auction_id);
+  perform _notify(p_buyer_dealer_id, 'rate', p_auction_id);
+  perform _notify(a.seller_dealer_id, 'rate', p_auction_id);
+  return 'bought';
+end; $$;

@@ -74,13 +74,14 @@ describe("notification generation in the writer RPCs", () => {
     expect((await notifs(D3)).length).toBe(0);
   });
 
-  it("buy_now_listing notifies the seller (sold) and not the buyer", async () => {
+  it("buy_now_listing notifies the seller (sold) and the buyer gets no 'sold' row of their own", async () => {
     const id = await makeLive();
     const { data: result } = await admin.rpc("buy_now_listing", {
       p_auction_id: id, p_buyer_dealer_id: D1,
     });
     expect(result).toBe("bought");
     expect((await notifs(D3, "sold")).length).toBe(1); // seller
-    expect((await notifs(D1)).length).toBe(0);         // buyer gets nothing (already redirected to /won)
+    expect((await notifs(D1, "sold")).length).toBe(0); // buyer: no 'sold' row (already redirected to /won)
+    expect((await notifs(D1, "rate")).length).toBe(1); // buyer: prompted to rate the deal (Slice 12)
   });
 });

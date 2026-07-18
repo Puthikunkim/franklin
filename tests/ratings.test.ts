@@ -79,3 +79,24 @@ describe("submit_rating", () => {
     expect(error).not.toBeNull();
   });
 });
+
+describe("rate-your-deal notifications", () => {
+  beforeEach(resetDb);
+  afterEach(async () => { await deleteAuctions(created); created.length = 0; });
+
+  it("close_auction notifies both parties to rate", async () => {
+    const id = await makeSold(); // seller D3, buyer D1, closed inside the helper
+    const { data: n } = await admin.from("notifications").select("*").eq("auction_id", id).eq("type", "rate");
+    const recips = (n ?? []).map((r) => r.recipient_dealer_id).sort();
+    expect(recips).toEqual([D1, D3].sort());
+  });
+
+  it("buy_now_listing notifies both parties to rate", async () => {
+    const CRV = "a0000000-0000-0000-0000-000000000a03"; // seed buy-now auction, seller D3
+    const { error } = await admin.rpc("buy_now_listing", { p_auction_id: CRV, p_buyer_dealer_id: D1 });
+    if (error) throw error;
+    const { data: n } = await admin.from("notifications").select("*").eq("auction_id", CRV).eq("type", "rate");
+    const recips = (n ?? []).map((r) => r.recipient_dealer_id).sort();
+    expect(recips).toEqual([D1, D3].sort());
+  });
+});
