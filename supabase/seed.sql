@@ -2,12 +2,12 @@
 -- All money values in integer cents; statuses live/ended/sold/passed; grades A-E
 
 -- ── Dealers ──────────────────────────────────────────────────────────────────
-insert into dealers (id, business_name, dealer_license_no, region, rating, initials) values
-  ('11111111-1111-1111-1111-111111111111','Auckland Motor Wholesale','MVT12345','Auckland',4.8,'AM'),
-  ('22222222-2222-2222-2222-222222222222','Waikato Trade Cars','MVT23456','Hamilton',4.6,'WT'),
-  ('33333333-3333-3333-3333-333333333333','Capital Auto Traders','MVT34567','Wellington',4.7,'CA'),
-  ('44444444-4444-4444-4444-444444444444','Southern Vehicle Exchange','MVT45678','Christchurch',4.5,'SV'),
-  ('55555555-5555-5555-5555-555555555555','BayCity Dealer Group','MVT56789','Tauranga',4.9,'BC');
+insert into dealers (id, business_name, dealer_license_no, region, initials) values
+  ('11111111-1111-1111-1111-111111111111','Auckland Motor Wholesale','MVT12345','Auckland','AM'),
+  ('22222222-2222-2222-2222-222222222222','Waikato Trade Cars','MVT23456','Hamilton','WT'),
+  ('33333333-3333-3333-3333-333333333333','Capital Auto Traders','MVT34567','Wellington','CA'),
+  ('44444444-4444-4444-4444-444444444444','Southern Vehicle Exchange','MVT45678','Christchurch','SV'),
+  ('55555555-5555-5555-5555-555555555555','BayCity Dealer Group','MVT56789','Tauranga','BC');
 
 -- ── Auction 1 (FIXED ID – Task 4 / Playwright anchor) ────────────────────────
 -- id = a0000000-0000-0000-0000-000000000a01

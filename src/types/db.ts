@@ -3,7 +3,7 @@ export type VehicleGrade = "A" | "B" | "C" | "D" | "E";
 
 export interface Dealer {
   id: string; business_name: string; dealer_license_no: string;
-  region: string; rating: number; is_verified: boolean; initials: string;
+  region: string; is_verified: boolean; initials: string;
 }
 export interface Vehicle {
   id: string; make: string; model: string; year: number; variant: string | null;

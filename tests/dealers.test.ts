@@ -19,7 +19,6 @@ describe("dealer profile reads", () => {
     const d = await getDealer(admin, D1);
     expect(d).not.toBeNull();
     expect(d!.business_name).toBe("Auckland Motor Wholesale");
-    expect(Number(d!.rating)).toBe(4.8);
     expect(d!.is_verified).toBe(true);
     expect(await getDealer(admin, "00000000-0000-0000-0000-000000000000")).toBeNull();
   });

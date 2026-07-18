@@ -6,6 +6,9 @@ import { Header } from "@/components/Header";
 import { AuctionCard } from "@/components/AuctionCard";
 import { getWatchedAuctionIds } from "@/lib/discovery";
 import { getDealer, getDealerLiveListings, getDealerSales } from "@/lib/dealers";
+import { Stars } from "@/components/Stars";
+import { getDealersReputation, getDealerReviews } from "@/lib/ratings";
+import type { DealerReview } from "@/types/db";
 
 function vehicleLabel(v: { year: number; make: string; model: string }) {
   return `${v.year} ${v.make} ${v.model}`;
@@ -23,11 +26,14 @@ export default async function DealerProfilePage({ params }: { params: Promise<{ 
   const dealer = await getDealer(sb, id);
   if (!dealer) notFound();
 
-  const [listings, sales, watchedIds] = await Promise.all([
+  const [listings, sales, watchedIds, reps, reviews] = await Promise.all([
     getDealerLiveListings(sb, id),
     getDealerSales(sb, id),
     getWatchedAuctionIds(sb, viewerId),
+    getDealersReputation(sb, [id]),
+    getDealerReviews(sb, id),
   ]);
+  const rep = reps[0];
   const watched = new Set(watchedIds);
 
   return (
@@ -45,7 +51,12 @@ export default async function DealerProfilePage({ params }: { params: Promise<{ 
               {dealer.is_verified && <span className="text-go" title="Verified">✓</span>}
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-sm text-fog">
-              <span className="text-signal">★ {Number(dealer.rating).toFixed(1)}</span>
+              {rep && rep.seller_count > 0
+                ? <span className="text-signal">As seller ★ {Number(rep.seller_avg).toFixed(1)} ({rep.seller_count})</span>
+                : <span>As seller — no ratings yet</span>}
+              {rep && rep.buyer_count > 0
+                ? <span className="text-signal">As buyer ★ {Number(rep.buyer_avg).toFixed(1)} ({rep.buyer_count})</span>
+                : <span>As buyer — no ratings yet</span>}
               <span>{dealer.region}</span>
               <span>Licence {dealer.dealer_license_no}</span>
             </div>
@@ -54,6 +65,26 @@ export default async function DealerProfilePage({ params }: { params: Promise<{ 
             </p>
           </div>
         </section>
+
+        {/* Reviews */}
+        {reviews.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="font-display text-lg font-semibold text-chalk">Reviews</h2>
+            <div className="space-y-2">
+              {reviews.map((r: DealerReview, i: number) => (
+                <div key={i} className="rounded-lg border border-line bg-panel px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <Stars score={r.score} />
+                    <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fog">
+                      {r.direction === "seller" ? "As seller" : "As buyer"}
+                    </span>
+                  </div>
+                  {r.comment && <p className="mt-1.5 text-sm text-chalk">{r.comment}</p>}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Live listings */}
         <section className="space-y-3">

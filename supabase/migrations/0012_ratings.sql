@@ -221,3 +221,6 @@ end; $$;
 grant execute on function get_dealers_reputation(uuid[]) to anon, authenticated, service_role;
 grant execute on function get_dealer_reviews(uuid) to anon, authenticated, service_role;
 grant execute on function get_rating_state(uuid, uuid) to anon, authenticated, service_role;
+
+-- The static per-dealer rating is replaced by derived reputation; remove it.
+alter table dealers drop column rating;
