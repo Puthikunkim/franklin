@@ -57,9 +57,28 @@ export async function deleteAuctions(ids: string[]): Promise<void> {
   if (!ids.length) return;
   const { data: rows } = await admin.from("auctions").select("vehicle_id").in("id", ids);
   const vids = (rows ?? []).map((r: { vehicle_id: string }) => r.vehicle_id);
+  await admin.from("ratings").delete().in("auction_id", ids);
   await admin.from("bids").delete().in("auction_id", ids);
   await admin.from("settlements").delete().in("auction_id", ids);
   await admin.from("notifications").delete().in("auction_id", ids);
   await admin.from("auctions").delete().in("id", ids);
   if (vids.length) await admin.from("vehicles").delete().in("id", vids);
+}
+
+// Create a live auction owned by `seller`, push it above reserve with `buyer` as the
+// winning proxy bidder, expire it and close it to 'sold'. Returns the (now sold) auction
+// id. Caller cleans up via deleteAuctions([...]). createLiveAuction uses starting_price =
+// 1_000_000c and reserve = 1_200_000c. A single bid always wins at the starting price
+// (proxy bidding — see place_bid's "no bids yet: open at starting price" branch), which
+// sits below reserve, so one bid alone never reaches 'sold' (see close_expired.test.ts's
+// "D1 leads at the 1,000,000 starting price" and dealers.test.ts's two-bid fixture). A
+// second, lower underbid from `seller` (a price-pushing rival here, not a real
+// counterparty) forces buyer's proxy to rise to 1,275,000 while buyer stays the winner.
+export async function createSoldAuction(seller: string, buyer: string): Promise<string> {
+  const id = await createLiveAuction(seller);
+  await admin.rpc("place_bid", { p_auction_id: id, p_dealer_id: buyer, p_max_amount: 1300000 }); // buyer leads at 1,000,000
+  await admin.rpc("place_bid", { p_auction_id: id, p_dealer_id: seller, p_max_amount: 1250000 }); // buyer's proxy holds → price 1,275,000 (>= reserve)
+  await admin.rpc("test_set_end_in_seconds", { p_auction_id: id, p_seconds: -1 });
+  await admin.rpc("close_auction", { p_auction_id: id });
+  return id;
 }
